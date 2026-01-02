@@ -1,0 +1,222 @@
+{
+  "modName": "SkyrimNet_Hunger",
+  "displayName": "SkyrimNet Hunger",
+  "minMcmVersion": 9,
+  "cursorFillMode": "topToBottom",
+  "pages": [
+    {
+      "pageDisplayName": "Vampire Hunger",
+      "cursorFillMode": "leftToRight",
+      "content": [
+        {
+          "text": "Hunger Rates",
+          "type": "header",
+          "position": 0
+        },
+        {
+          "text": "",
+          "type": "header",
+          "position": 1
+        },
+        {
+          "id": "fBaseRate:Main",
+          "text": "Base Hunger Rate",
+          "type": "slider",
+          "help": "Standard hunger points per hour for normal vampires",
+          "valueOptions": {
+            "min": 0.5,
+            "max": 10.0,
+            "step": 0.5,
+            "defaultValue": 5.0,
+            "sourceType": "ModSettingFloat"
+          },
+          "position": 2
+        },
+        {
+          "id": "fLordRate:Main",
+          "text": "Vampire Lord Rate",
+          "type": "slider",
+          "help": "Hunger rate for Serana, Harkon, and Valerica",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 5.0,
+            "step": 0.25,
+            "defaultValue": 1.0,
+            "sourceType": "ModSettingFloat"
+          },
+          "position": 4
+        },
+        {
+          "id": "fTeammateRate:Main",
+          "text": "Follower Rate",
+          "type": "slider",
+          "help": "Hunger rate for active followers",
+          "valueOptions": {
+            "min": 0.5,
+            "max": 5.0,
+            "step": 0.25,
+            "defaultValue": 2.0,
+            "sourceType": "ModSettingFloat"
+          },
+          "position": 3
+        },
+        {
+          "text": "Life Simulation",
+          "type": "header",
+          "position": 6
+        },
+        {
+          "text": "",
+          "type": "header",
+          "position": 7
+        },
+        {
+          "id": "fSimulationThreshold:Main",
+          "text": "Simulation Threshold",
+          "type": "slider",
+          "help": "Hours passed before life simulation kicks in for NPCs",
+          "valueOptions": {
+            "min": 1.0,
+            "max": 48.0,
+            "step": 1.0,
+            "defaultValue": 8.0,
+            "sourceType": "ModSettingFloat"
+          },
+          "position": 8
+        },
+        {
+          "id": "fSleepThreshold:Main",
+          "text": "Sleep Threshold",
+          "type": "slider",
+          "help": "Hours required before follower attempts to hunt during sleep/wait",
+          "valueOptions": {
+            "min": 1.0,
+            "max": 12.0,
+            "step": 0.5,
+            "defaultValue": 4.0,
+            "sourceType": "ModSettingFloat"
+          },
+          "position": 10
+        },
+        {
+          "id": "iFeedingChance:Main",
+          "text": "NPC Feeding Chance",
+          "type": "slider",
+          "help": "Percentage chance NPCs fed while you were away",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 5,
+            "defaultValue": 75,
+            "sourceType": "ModSettingInt"
+          },
+          "position": 9
+        },
+        {
+          "id": "iFollowerHuntChance:Main",
+          "text": "Follower Hunt Chance",
+          "type": "slider",
+          "help": "Percentage chance followers hunted successfully during sleep/wait",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 5,
+            "defaultValue": 60,
+            "sourceType": "ModSettingInt"
+          },
+          "position": 11
+        },
+        {
+          "text": "Feeding Settings",
+          "type": "header",
+          "position": 12
+        },
+        {
+          "text": "",
+          "type": "header",
+          "position": 13
+        },
+        {
+          "id": "iAmountToReduceFull:Main",
+          "text": "Combat Feed Reduction",
+          "type": "slider",
+          "help": "Hunger reduction when feeding in combat (full drain)",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 5,
+            "defaultValue": 100,
+            "sourceType": "ModSettingInt"
+          },
+          "position": 14
+        },
+        {
+          "id": "iAmountToReducePartial:Main",
+          "text": "Normal Feed Reduction",
+          "type": "slider",
+          "help": "Hunger reduction for partial feeding (quick bite)",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 5,
+            "defaultValue": 100,
+            "sourceType": "ModSettingInt"
+          },
+          "position": 15
+        },
+        {
+          "text": "Manual Controls",
+          "type": "header",
+          "position": 18
+        },
+        {
+          "text": "",
+          "type": "header",
+          "position": 19
+        },
+        {
+          "id": "iSeranaHungerLevel:Main",
+          "text": "Serana Hunger Level",
+          "type": "slider",
+          "help": "Adjust Serana's hunger level (updates live)",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "defaultValue": 0,
+            "sourceType": "ModSettingInt"
+          },
+          "position": 20
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Debug",
+      "cursorFillMode": "leftToRight",
+      "content": [
+        {
+          "text": "Debug Options",
+          "type": "header",
+          "position": 0
+        },
+        {
+          "text": "",
+          "type": "header",
+          "position": 1
+        },
+        {
+          "id": "bDevelopmentMode:Main",
+          "text": "Development Mode",
+          "type": "toggle",
+          "help": "Enable debug console output",
+          "valueOptions": {
+            "sourceType": "GlobalValue",
+            "defaultValue": false,
+            "propertyName": "SHS_DevelopmentModeEnabled"
+          },
+          "position": 2
+        }
+      ]
+    }
+  ]
+}

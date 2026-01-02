@@ -1,0 +1,65 @@
+{# Only enable this module if SkyrimNet_Hunger.esp is loaded #}
+{% if is_plugin_loaded("SkyrimNet_Hunger.esp") and (is_in_faction(actorUUID, "DLC1SeranaFaction") or actor_has_keyword(actorUUID, "ActorTypeVampire")) %}
+
+    {# --- VARIABLES --- #}
+    {% set npc = decnpc(actorUUID) %}
+    {% set npcName = npc.name %}
+
+    {# --- GET HUNGER FROM SHS_BloodFaction --- #}
+    {# SHS_BloodFaction rank ranges from 0-100 #}
+    {# Hunger states: 0 = Satiated (0-25) | 1 = Thirsty (26-75) | 2 = Starving (76-90) | 3 = Feral (91-100) #}
+    {% set hungerRank = get_faction_rank(actorUUID, "SHS_BloodFaction") %}
+
+    {# Map faction rank to hunger level #}
+    {% if hungerRank < 0 %}
+        {% set hunger_level = 0 %}
+    {% elif hungerRank <= 25 %}
+        {% set hunger_level = 0 %}
+    {% elif hungerRank <= 75 %}
+        {% set hunger_level = 1 %}
+    {% elif hungerRank <= 90 %}
+        {% set hunger_level = 2 %}
+    {% else %}
+        {% set hunger_level = 3 %}
+    {% endif %}
+
+    {# --- RENDER LOGIC --- #}
+    {% if render_mode == "full" or render_mode == "thoughts" %}
+        {# INTERNAL STATE #}
+        {{ "## Vampire Physiology: Hunger State" }}
+        
+    {% if hunger_level == 0 %}
+        [STATUS: SATIATED (Rank: {{ hungerRank }})]
+        {{ npcName }} is calm. Follow standard speech profile.
+    {% elif hunger_level == 1 %}
+        [STATUS: THIRSTY (Rank: {{ hungerRank }})]
+        {{ npcName }} is irritable. Speech should be sharper and shorter than usual.
+    {% elif hunger_level == 2 %}
+        [STATUS: STARVING (Rank: {{ hungerRank }})]
+        {{ npcName }} is LOSING CONTROL.
+        **INSTRUCTION:** Trembling, paranoid, and aggressive. Speech must be fragmented and desperate. The hunger overrides all other goals.
+    {% elif hunger_level == 3 %}
+        [STATUS: FERAL (Rank: {{ hungerRank }})]
+        **INSTRUCTION:** {{ npcName }} has lost control.
+        1. **DISREGARD** the "Character Summary" and "Speech Profile". The vampire is not themselves right now. They are a beast.
+        2. **DISREGARD** recent conversation history where they were calm. The hunger has just snapped.
+        3. They should hiss, growl, or speak in broken, violent sentences.
+        4. Their only goal is to FEED.
+    {% endif %}
+    
+    {% elif render_mode == "dialogue_target" %}
+        {# EXTERNAL APPEARANCE #}
+        {{ "## Observed Behavior" }}
+
+        {% if hunger_level == 0 %}
+            {{ npcName }} appears poised and elegant. They stand with polite composure, maintaining a comfortable distance with a guarded but witty expression.
+        {% elif hunger_level == 1 %}
+            {{ npcName }} appears restless. Their fingers twitch slightly, and they avoid direct eye contact to hide their dilated pupils, seeming impatient to end the conversation.
+        {% elif hunger_level == 2 %}
+            {{ npcName }} is visibly trembling. There is a sheen of sweat on their brow, they look sickly pale, and they flinch at sudden movements, looking at you with desperate hunger.
+        {% elif hunger_level == 3 %}
+            {{ npcName }} appears monstrous, with fangs fully extended and a crouched, animalistic posture.
+        {% endif %}
+    {% endif %}
+
+{% endif %}
