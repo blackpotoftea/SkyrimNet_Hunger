@@ -25,8 +25,7 @@ The mod tracks vampire hunger on a scale of 0-100 with four distinct states:
 
 This mod sends a ModEvent whenever a vampire's hunger state changes, allowing other mods to react to vampire behavior.
 
-#### Event Name
-`SHS_VampireHungerChanged`
+#### Outgoing Event: `SHS_VampireHungerChanged`
 
 #### Event Parameters
 
@@ -76,6 +75,39 @@ EndEvent
 ### Event Triggering
 
 The event only fires when the hunger **state** changes (crossing thresholds), not on every hunger value change. This prevents spam and ensures you only receive meaningful state transitions.
+
+---
+
+### Incoming Event: `NpcVampireFeed`
+
+This mod listens for the `NpcVampireFeed` ModEvent to automatically adjust vampire hunger when NPCs feed through other mods (e.g., Devour - Sensual Vampire Feeding).
+
+#### Event Parameters Expected
+
+- **sender** (Form): The vampire actor who is feeding
+- **strArg** (String): Amount fed (optional, unused - mod uses its own feeding calculation)
+- **numArg** (Float): Numeric argument (unused)
+
+#### How It Works
+
+When `NpcVampireFeed` is received:
+1. The vampire NPC is extracted from the sender
+2. The mod's existing feeding logic is applied (non-combat, partial reduction)
+3. Hunger is reduced based on current hunger state and configuration
+4. If hunger state changes, a `SHS_VampireHungerChanged` event is sent
+
+#### Sending This Event
+
+```papyrus
+; Example: Notify SkyrimNet_Hunger that an NPC has fed
+int handle = ModEvent.Create("NpcVampireFeed")
+if handle
+    ModEvent.PushForm(handle, vampireActor)
+    ModEvent.PushString(handle, "20")  ; Optional amount (unused)
+    ModEvent.PushFloat(handle, 0.0)    ; Optional numeric arg (unused)
+    ModEvent.Send(handle)
+endif
+```
 
 ## SkyrimNet Integration
 

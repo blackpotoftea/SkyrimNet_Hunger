@@ -19,22 +19,119 @@ Location Property DLC1SoulCairnLocation  Auto
 
 Keyword Property LocTypeVampireLair  Auto
 
-float Property BaseRate = 5.0 Auto          ; Standard hunger/hour
-Float Property LordRate = 1.0 Auto          ; Serana/Harkon/Valerica rate
-Float Property TeammateRate = 2.0 Auto      ; Active Follower rate
+; Configuration variables - values stored here, NOT in save files (non-Auto)
+; MCM will set these via setters on config load
+float _BaseRate = 5.0
+float _LordRate = 1.0
+float _TeammateRate = 2.0
+float _SimulationThreshold = 8.0
+int _FeedingChance = 75
+int _FollowerHuntChance = 60
+float _SleepThreshold = 4.0
+int _AmountToReduceFull = 80
+int _AmountToReducePartial = 40
+int _EventTTL = 120
+int _DebugForceHungerState = -1
 
-Float Property SimulationThreshold = 8.0 Auto ; Hours passed before "Life Sim" kicks in
-Int Property FeedingChance = 75 Auto          ; % Chance they ate while you were gone
-Int Property FollowerHuntChance = 60 Auto
-Float Property SleepThreshold = 4.0 Auto
-int Property AmountToReduceFull = 80 Auto      ; Combat feeding - full drain
-int Property AmountToReducePartial = 40 Auto   ; willing feeding target have kept alive - partial bite
-int Property EventTTL = 120 Auto               ; Event Time-To-Live in seconds (SkyrimNet)
-int Property CURRENT_MOD_VERSION = 1 Auto
+; Getters
+float Function GetBaseRate()
+    return _BaseRate
+EndFunction
+
+float Function GetLordRate()
+    return _LordRate
+EndFunction
+
+float Function GetTeammateRate()
+    return _TeammateRate
+EndFunction
+
+float Function GetSimulationThreshold()
+    return _SimulationThreshold
+EndFunction
+
+int Function GetFeedingChance()
+    return _FeedingChance
+EndFunction
+
+int Function GetFollowerHuntChance()
+    return _FollowerHuntChance
+EndFunction
+
+float Function GetSleepThreshold()
+    return _SleepThreshold
+EndFunction
+
+int Function GetAmountToReduceFull()
+    return _AmountToReduceFull
+EndFunction
+
+int Function GetAmountToReducePartial()
+    return _AmountToReducePartial
+EndFunction
+
+int Function GetEventTTL()
+    return _EventTTL
+EndFunction
+
+int Function GetDebugForceHungerState()
+    return _DebugForceHungerState
+EndFunction
+
+; Setters (called by MCM)
+Function SetBaseRate(float value)
+    _BaseRate = value
+EndFunction
+
+Function SetLordRate(float value)
+    _LordRate = value
+EndFunction
+
+Function SetTeammateRate(float value)
+    _TeammateRate = value
+EndFunction
+
+Function SetSimulationThreshold(float value)
+    _SimulationThreshold = value
+EndFunction
+
+Function SetFeedingChance(int value)
+    _FeedingChance = value
+EndFunction
+
+Function SetFollowerHuntChance(int value)
+    _FollowerHuntChance = value
+EndFunction
+
+Function SetSleepThreshold(float value)
+    _SleepThreshold = value
+EndFunction
+
+Function SetAmountToReduceFull(int value)
+    _AmountToReduceFull = value
+EndFunction
+
+Function SetAmountToReducePartial(int value)
+    _AmountToReducePartial = value
+EndFunction
+
+Function SetEventTTL(int value)
+    _EventTTL = value
+EndFunction
+
+Function SetDebugForceHungerState(int value)
+    _DebugForceHungerState = value
+EndFunction
+
+int Function GetCurrentModVersion()
+    return 2  ; Hardcoded mod version
+EndFunction
 
 Function startup()
     Console("SkyrimNet_Hunger loaded...")
     registerEventSchemaHunger()
+    RegisterForModEvent("NpcVampireFeed", "OnNpcVampireFeed")
+    debugConsole("Registered for NpcVampireFeed mod event")
 EndFunction
 
 ; Register the vampire_hunger event schema with SkyrimNet
@@ -76,7 +173,7 @@ Function ProcessActorUpdate(Actor akTarget)
     ; 1. RATE CALCULATION & IDENTITY CHECKS
     ; ---------------------------------------------------------
     ActorBase BaseNPC = akTarget.GetBaseObject() as ActorBase
-    Float CurrentRate = BaseRate 
+    Float CurrentRate = GetBaseRate()
     Bool IsFollower = akTarget.IsPlayerTeammate()
 
     ; A) VALERICA
@@ -85,15 +182,15 @@ Function ProcessActorUpdate(Actor akTarget)
             SetActorHunger(akTarget, 0)
             Return
         endif
-        CurrentRate = LordRate
-    
+        CurrentRate = GetLordRate()
+
     ; B) LORDS
     elseif BaseNPC == DLC1Serana || BaseNPC == DLC1Harkon
-        CurrentRate = LordRate
+        CurrentRate = GetLordRate()
 
     ; C) FOLLOWERS
     elseif IsFollower
-        CurrentRate = TeammateRate
+        CurrentRate = GetTeammateRate()
     endif
 
 
@@ -138,14 +235,14 @@ Function ProcessActorUpdate(Actor akTarget)
 
     ; --- BRANCH A: FOLLOWER "NIGHT HUNT" (Sleep/Wait) ---
     ; If it's a follower AND enough time passed (Sleep/Wait), they try to hunt.
-    if IsFollower && HoursPassed >= SleepThreshold
-        
+    if IsFollower && HoursPassed >= GetSleepThreshold()
+
         debugConsole(akTarget.GetDisplayName() + ": Follower sleep/wait detected (" + HoursPassed + "h) - rolling hunt chance")
         int DiceRoll = Utility.RandomInt(0, 100)
-        
-        if DiceRoll <= FollowerHuntChance
+
+        if DiceRoll <= GetFollowerHuntChance()
             ; SUCCESS: They fed while you slept.
-            NewHunger = 0 
+            NewHunger = 0
             debugConsole(akTarget.GetDisplayName() + ": Hunt SUCCESS - hunger reset to 0")
         else
             ; FAIL: They just waited. Add normal hunger.
@@ -157,12 +254,12 @@ Function ProcessActorUpdate(Actor akTarget)
 
     ; --- BRANCH B: GENERIC NPC LONG ABSENCE ---
     ; If not a follower, and player was gone for > 24 hours.
-    elseif !IsFollower && HoursPassed >= SimulationThreshold
-        
+    elseif !IsFollower && HoursPassed >= GetSimulationThreshold()
+
         debugConsole(akTarget.GetDisplayName() + ": Long absence (" + HoursPassed + "h) - simulating life")
         int DiceRoll = Utility.RandomInt(0, 100)
-        
-        if DiceRoll <= FeedingChance
+
+        if DiceRoll <= GetFeedingChance()
             NewHunger = Utility.RandomInt(0, 30) ; Fed
         else
             NewHunger = Utility.RandomInt(70, 95) ; Starved
@@ -197,11 +294,11 @@ Function FeedActor(Actor akTarget, Actor akVictim = None)
     ; --- Calculate base feeding amount based on combat state ---
     if akTarget.IsInCombat()
         ; Combat feeding: full drain with some variance (80-100%)
-        AmountToReduce = (AmountToReduceFull * Utility.RandomInt(80, 100)) / 100
+        AmountToReduce = (GetAmountToReduceFull() * Utility.RandomInt(80, 100)) / 100
         debugConsole(akTarget.GetDisplayName() + ": Combat feeding (desperate drain)")
     else
         ; Non-combat feeding: partial with variance (60-100%)
-        AmountToReduce = (AmountToReducePartial * Utility.RandomInt(60, 100)) / 100
+        AmountToReduce = (GetAmountToReducePartial() * Utility.RandomInt(60, 100)) / 100
         debugConsole(akTarget.GetDisplayName() + ": Controlled feeding (partial)")
     endif
 
@@ -259,16 +356,6 @@ Function FeedActor(Actor akTarget, Actor akVictim = None)
 
 EndFunction
 
-; Bool Function IsThrallNearby(Actor akVampire)
-;     ; Uses PO3 Extender for native speed (Zero FPS cost)
-;     Actor Food = PO3_SKSEFunctions.FindClosestActor(akVampire, ScanRadius, None, DLC1VampireCattleFaction, false)
-;     if Food
-;         debugConsole("Live thrall detected nearby: " + Food.GetDisplayName())
-;         return true
-;     endif
-;     return false
-; EndFunction
-
 Actor Function getActorSerana()
     Actor Serana = Game.GetFormFromFile(0x00002B74, "Dawnguard.esm") as Actor
     return Serana
@@ -318,11 +405,6 @@ bool Function IsActorLoaded(Actor npc)
 Endfunction
 
 
-int Function getCurrentModVersion()
-    return CURRENT_MOD_VERSION
-Endfunction
-
-
 Function updatedHungerSpellOnSerana(bool status)    
     Actor Serana = getActorSerana()
 
@@ -342,11 +424,6 @@ Function _testRemoveHungerOnNpc(Actor npc)
     npc.removespell(SHS_BoodHungerSpell)
 Endfunction
 
-; Returns hunger state based on faction rank (0-100)
-; 0 = Satiated (0-25): NPC has recently fed, acts normal, no buffs or debuffs
-; 1 = Thirsty (26-75): The urge is beginning, functions normally but might complain
-; 2 = Starving (76-90): Visibly weak, may start looking for sleeping NPCs to feed on
-; 3 = Feral (91-100): Lost control, ignores social norms, might attack on sight
 int Function GetHungerState(int hungerRank)
     if hungerRank <= 25
         return 0  ; Satiated
@@ -358,7 +435,6 @@ int Function GetHungerState(int hungerRank)
         return 3  ; Feral
     endif
 EndFunction
-
 
 string Function GetHungerStateName(int hungerRank)
     int hungerState = GetHungerState(hungerRank)
@@ -400,7 +476,7 @@ Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHung
     eventDataJson += "}"
 
     ; Convert seconds to milliseconds for SkyrimNet API
-    int ttlMs = EventTTL * 1000
+    int ttlMs = GetEventTTL() * 1000
 
     debugConsole("HUNGER EVENT: " + eventDescription)
 
@@ -411,10 +487,9 @@ Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHung
 
     ; Register short-lived event with SkyrimNet
     int result = SkyrimNetApi.RegisterShortLivedEvent(eventId, "vampire_hunger", eventDescription, eventDataJson, ttlMs, npc, npc)
-    debugConsole("SkyrimNet event registered (TTL: " + EventTTL + "s): " + result)
+    debugConsole("SkyrimNet event registered (TTL: " + GetEventTTL() + "s): " + result)
 EndFunction
 
-; Check if hunger state has changed and trigger event if needed
 Function CheckHungerStateChange(Actor npc, int oldHunger, int newHunger)
     if !npc
         return
@@ -423,14 +498,12 @@ Function CheckHungerStateChange(Actor npc, int oldHunger, int newHunger)
     int oldState = GetHungerState(oldHunger)
     int newState = GetHungerState(newHunger)
 
-    ; Only trigger event if state actually changed (not just hunger value)
     if oldState != newState
         generateSkyrimNetHungerEvent(npc, oldHunger, newHunger)
         SendVampireHungerModEvent(npc, newHunger, newState)
     endif
 EndFunction
 
-; Send ModEvent to notify other mods of vampire hunger state change
 Function SendVampireHungerModEvent(Actor npc, int hungerLevel, int hungerState)
     if !npc
         return
@@ -449,6 +522,23 @@ Function SendVampireHungerModEvent(Actor npc, int hungerLevel, int hungerState)
     endif
 EndFunction
 
+Event OnNpcVampireFeed(string eventName, string strArg, float numArg, Form sender)
+    debugConsole("NpcVampireFeed Event Received")
+    debugConsole("Sender Form ID: " + sender.GetFormID())
+
+    Actor vampire = sender as Actor
+    if !vampire
+        debugConsole("ERROR: Sender is not an Actor!")
+        return
+    endif
+
+    debugConsole(vampire.GetDisplayName() + " fed via NpcVampireFeed event - treating as willing feed (non-combat)")
+
+    ; Use the existing FeedActor function with no victim (None)
+    ; This will treat it as a non-combat feeding with partial reduction
+    FeedActor(vampire, None)
+EndEvent
+
 
 Function SetActorHunger(Actor npc, int newHungerLevel)
     if !npc
@@ -463,6 +553,19 @@ Function SetActorHunger(Actor npc, int newHungerLevel)
 
     ; Get current hunger
     int currentHunger = npc.GetFactionRank(SHS_BloodFaction)
+
+    ; Debug: Force hunger state override
+    int debugForce = GetDebugForceHungerState()
+    if debugForce >= 0
+        if debugForce == 0
+            newHungerLevel = 0    ; Force satiated
+        elseif debugForce == 1
+            newHungerLevel = 50   ; Force thirsty
+        elseif debugForce == 2
+            newHungerLevel = 100  ; Force feral
+        endif
+        debugConsole("DEBUG: Forcing " + npc.GetDisplayName() + " hunger to " + newHungerLevel)
+    endif
 
     ; Cap the new value
     if newHungerLevel < 0

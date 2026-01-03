@@ -9,7 +9,7 @@
       "cursorFillMode": "leftToRight",
       "content": [
         {
-          "text": "Hunger Rates",
+          "text": "Mod Information",
           "type": "header",
           "position": 0
         },
@@ -17,6 +17,27 @@
           "text": "",
           "type": "header",
           "position": 1
+        },
+        {
+          "id": "sModVersion:Main",
+          "type": "text",
+          "text": "Mod Version",
+          "help": "Current version of SkyrimNet Hunger",
+          "valueOptions": {
+            "value": "",
+            "sourceType": "ModSettingString"
+          },
+          "position": 2
+        },
+        {
+          "text": "Hunger Rates",
+          "type": "header",
+          "position": 6
+        },
+        {
+          "text": "",
+          "type": "header",
+          "position": 7
         },
         {
           "id": "fBaseRate:Main",
@@ -30,21 +51,7 @@
             "defaultValue": 5.0,
             "sourceType": "ModSettingFloat"
           },
-          "position": 2
-        },
-        {
-          "id": "fLordRate:Main",
-          "text": "Volkihar Clan Rate",
-          "type": "slider",
-          "help": "Hunger rate for Serana, Harkon, and Valerica",
-          "valueOptions": {
-            "min": 0.0,
-            "max": 5.0,
-            "step": 0.25,
-            "defaultValue": 1.0,
-            "sourceType": "ModSettingFloat"
-          },
-          "position": 4
+          "position": 8
         },
         {
           "id": "fTeammateRate:Main",
@@ -58,17 +65,31 @@
             "defaultValue": 2.0,
             "sourceType": "ModSettingFloat"
           },
-          "position": 3
+          "position": 9
+        },
+        {
+          "id": "fLordRate:Main",
+          "text": "Volkihar Clan Rate",
+          "type": "slider",
+          "help": "Hunger rate for Serana, Harkon, and Valerica",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 5.0,
+            "step": 0.25,
+            "defaultValue": 1.0,
+            "sourceType": "ModSettingFloat"
+          },
+          "position": 10
         },
         {
           "text": "Life Simulation",
           "type": "header",
-          "position": 6
+          "position": 12
         },
         {
           "text": "",
           "type": "header",
-          "position": 7
+          "position": 13
         },
         {
           "id": "fSimulationThreshold:Main",
@@ -82,21 +103,7 @@
             "defaultValue": 8.0,
             "sourceType": "ModSettingFloat"
           },
-          "position": 8
-        },
-        {
-          "id": "fSleepThreshold:Main",
-          "text": "Sleep Threshold",
-          "type": "slider",
-          "help": "Hours required before follower attempts to hunt during sleep/wait",
-          "valueOptions": {
-            "min": 1.0,
-            "max": 12.0,
-            "step": 0.5,
-            "defaultValue": 4.0,
-            "sourceType": "ModSettingFloat"
-          },
-          "position": 10
+          "position": 14
         },
         {
           "id": "iFeedingChance:Main",
@@ -110,7 +117,21 @@
             "defaultValue": 75,
             "sourceType": "ModSettingInt"
           },
-          "position": 9
+          "position": 15
+        },
+        {
+          "id": "fSleepThreshold:Main",
+          "text": "Sleep Threshold",
+          "type": "slider",
+          "help": "Hours required before follower attempts to hunt during sleep/wait",
+          "valueOptions": {
+            "min": 1.0,
+            "max": 12.0,
+            "step": 0.5,
+            "defaultValue": 4.0,
+            "sourceType": "ModSettingFloat"
+          },
+          "position": 16
         },
         {
           "id": "iFollowerHuntChance:Main",
@@ -124,17 +145,17 @@
             "defaultValue": 60,
             "sourceType": "ModSettingInt"
           },
-          "position": 11
+          "position": 17
         },
         {
           "text": "Feeding Settings",
           "type": "header",
-          "position": 12
+          "position": 18
         },
         {
           "text": "",
           "type": "header",
-          "position": 13
+          "position": 19
         },
         {
           "id": "iAmountToReduceFull:Main",
@@ -148,7 +169,7 @@
             "defaultValue": 80,
             "sourceType": "ModSettingInt"
           },
-          "position": 14
+          "position": 20
         },
         {
           "id": "iAmountToReducePartial:Main",
@@ -162,17 +183,17 @@
             "defaultValue": 40,
             "sourceType": "ModSettingInt"
           },
-          "position": 15
+          "position": 21
         },
         {
           "text": "SkyrimNet Integration",
           "type": "header",
-          "position": 16
+          "position": 24
         },
         {
           "text": "",
           "type": "header",
-          "position": 17
+          "position": 25
         },
         {
           "id": "iEventTTL:Main",
@@ -186,17 +207,17 @@
             "defaultValue": 120,
             "sourceType": "ModSettingInt"
           },
-          "position": 18
+          "position": 26
         },
         {
           "text": "Manual Controls",
           "type": "header",
-          "position": 20
+          "position": 30
         },
         {
           "text": "",
           "type": "header",
-          "position": 21
+          "position": 31
         },
         {
           "id": "iSeranaHungerLevel:Main",
@@ -210,7 +231,7 @@
             "defaultValue": 0,
             "sourceType": "ModSettingInt"
           },
-          "position": 22
+          "position": 32
         }
       ]
     },
@@ -238,6 +259,20 @@
             "defaultValue": false
           },
           "position": 2
+        },
+        {
+          "id": "iDebugForceHungerState:Main",
+          "text": "Force Hunger State",
+          "type": "slider",
+          "help": "Force all NPCs to specific hunger state for testing. -1=Disabled, 0=Satiated(0), 1=Thirsty(50), 2=Feral(100)",
+          "valueOptions": {
+            "min": -1,
+            "max": 2,
+            "step": 1,
+            "defaultValue": -1,
+            "sourceType": "ModSettingInt"
+          },
+          "position": 3
         }
       ]
     }

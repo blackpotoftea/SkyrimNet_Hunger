@@ -3,7 +3,7 @@ Scriptname SHS_MCM extends MCM_ConfigBase
 SHS_Main Property MainQuest Auto
 
 int Function GetVersion()
-    return 2
+    return MainQuest.GetCurrentModVersion()
 EndFunction
 
 Event OnConfigInit()
@@ -19,7 +19,8 @@ EndEvent
 Event OnPageSelect(String a_page)
     parent.OnPageSelect(a_page)
 
-    ; Dynamically refresh Serana hunger display when page opens
+    SetModSettingString("sModVersion:Main", GetVersion() as String)
+
     Actor Serana = MainQuest.getActorSerana()
     if Serana && Serana.IsInFaction(MainQuest.SHS_BloodFaction)
         int CurrentHunger = Serana.GetFactionRank(MainQuest.SHS_BloodFaction)
@@ -36,7 +37,6 @@ EndEvent
 Event OnSettingChange(string a_ID)
     parent.OnSettingChange(a_ID)
 
-    ; Handle Serana hunger live update
     If a_ID == "iSeranaHungerLevel:Main"
         UpdateSeranaHunger()
     elseIf a_ID == "bDevelopmentMode:Main"
@@ -51,35 +51,38 @@ EndEvent
 Function LoadSettings()
     MainQuest.debugConsole("MCM: Loading settings")
 
-    MainQuest.BaseRate = GetModSettingFloat("fBaseRate:Main")
-    MainQuest.debugConsole("BaseRate: " + MainQuest.BaseRate)
+    MainQuest.SetBaseRate(GetModSettingFloat("fBaseRate:Main"))
+    MainQuest.debugConsole("BaseRate: " + MainQuest.GetBaseRate())
 
-    MainQuest.LordRate = GetModSettingFloat("fLordRate:Main")
-    MainQuest.debugConsole("LordRate: " + MainQuest.LordRate)
+    MainQuest.SetLordRate(GetModSettingFloat("fLordRate:Main"))
+    MainQuest.debugConsole("LordRate: " + MainQuest.GetLordRate())
 
-    MainQuest.TeammateRate = GetModSettingFloat("fTeammateRate:Main")
-    MainQuest.debugConsole("TeammateRate: " + MainQuest.TeammateRate)
+    MainQuest.SetTeammateRate(GetModSettingFloat("fTeammateRate:Main"))
+    MainQuest.debugConsole("TeammateRate: " + MainQuest.GetTeammateRate())
 
-    MainQuest.SimulationThreshold = GetModSettingFloat("fSimulationThreshold:Main")
-    MainQuest.debugConsole("SimulationThreshold: " + MainQuest.SimulationThreshold)
+    MainQuest.SetSimulationThreshold(GetModSettingFloat("fSimulationThreshold:Main"))
+    MainQuest.debugConsole("SimulationThreshold: " + MainQuest.GetSimulationThreshold())
 
-    MainQuest.FeedingChance = GetModSettingInt("iFeedingChance:Main")
-    MainQuest.debugConsole("FeedingChance: " + MainQuest.FeedingChance)
+    MainQuest.SetFeedingChance(GetModSettingInt("iFeedingChance:Main"))
+    MainQuest.debugConsole("FeedingChance: " + MainQuest.GetFeedingChance())
 
-    MainQuest.FollowerHuntChance = GetModSettingInt("iFollowerHuntChance:Main")
-    MainQuest.debugConsole("FollowerHuntChance: " + MainQuest.FollowerHuntChance)
+    MainQuest.SetFollowerHuntChance(GetModSettingInt("iFollowerHuntChance:Main"))
+    MainQuest.debugConsole("FollowerHuntChance: " + MainQuest.GetFollowerHuntChance())
 
-    MainQuest.SleepThreshold = GetModSettingFloat("fSleepThreshold:Main")
-    MainQuest.debugConsole("SleepThreshold: " + MainQuest.SleepThreshold)
+    MainQuest.SetSleepThreshold(GetModSettingFloat("fSleepThreshold:Main"))
+    MainQuest.debugConsole("SleepThreshold: " + MainQuest.GetSleepThreshold())
 
-    MainQuest.AmountToReduceFull = GetModSettingInt("iAmountToReduceFull:Main")
-    MainQuest.debugConsole("AmountToReduceFull: " + MainQuest.AmountToReduceFull)
+    MainQuest.SetAmountToReduceFull(GetModSettingInt("iAmountToReduceFull:Main"))
+    MainQuest.debugConsole("AmountToReduceFull: " + MainQuest.GetAmountToReduceFull())
 
-    MainQuest.AmountToReducePartial = GetModSettingInt("iAmountToReducePartial:Main")
-    MainQuest.debugConsole("AmountToReducePartial: " + MainQuest.AmountToReducePartial)
+    MainQuest.SetAmountToReducePartial(GetModSettingInt("iAmountToReducePartial:Main"))
+    MainQuest.debugConsole("AmountToReducePartial: " + MainQuest.GetAmountToReducePartial())
 
-    MainQuest.EventTTL = GetModSettingInt("iEventTTL:Main")
-    MainQuest.debugConsole("EventTTL: " + MainQuest.EventTTL)
+    MainQuest.SetEventTTL(GetModSettingInt("iEventTTL:Main"))
+    MainQuest.debugConsole("EventTTL: " + MainQuest.GetEventTTL())
+
+    MainQuest.SetDebugForceHungerState(GetModSettingInt("iDebugForceHungerState:Main"))
+    MainQuest.debugConsole("DebugForceHungerState: " + MainQuest.GetDebugForceHungerState())
 
     MainQuest.SHS_DevelopmentModeEnabled.SetValueInt(GetModSettingBool("bDevelopmentMode:Main") as Int)
     MainQuest.debugConsole("DevelopmentMode: " + MainQuest.SHS_DevelopmentModeEnabled.GetValueInt())
