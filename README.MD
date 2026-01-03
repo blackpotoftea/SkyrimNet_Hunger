@@ -117,7 +117,9 @@ This mod registers vampire hunger events with SkyrimNet, enabling AI characters 
 
 - SKSE64
 - SkyUI (for MCM)
-- PapyrusUtil
+- [PapyrusUtil SE](https://www.nexusmods.com/skyrimspecialedition/mods/13048)
+- [MCM Helper](https://www.nexusmods.com/skyrimspecialedition/mods/53000)
+- [Vampire Animations](https://www.nexusmods.com/skyrimspecialedition/mods/100349)
 - SkyrimNet (for AI integration features)
 - Dawnguard DLC
 
