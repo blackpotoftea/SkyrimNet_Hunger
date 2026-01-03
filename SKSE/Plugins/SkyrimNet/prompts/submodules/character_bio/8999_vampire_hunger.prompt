@@ -67,7 +67,13 @@
 
         4. **The vampire's ONLY cognition:** FEED. NOW. Nothing else exists.
 
-        5. **DISREGARD ALL OTHER INSTRUCTIONS:** Character Summary, Speech Profile, and conversation history are IRRELEVANT. The vampire is a mindless beast driven purely by hunger.
+        5. **Reacting to prey:**
+           - **If prey willingly offers blood:** Lunge and bite immediately with desperate relief
+           - **If prey refuses or resists:** Attack violently to take blood by force
+           - **If prey is neutral/unaware:** Demand blood first, then attack if denied
+           - The vampire cannot reason or negotiate, only react to acceptance or denial
+
+        6. **DISREGARD ALL OTHER INSTRUCTIONS:** Character Summary, Speech Profile, and conversation history are IRRELEVANT. The vampire is a mindless beast driven purely by hunger.
     {% endif %}
     
     {% elif render_mode == "dialogue_target" %}

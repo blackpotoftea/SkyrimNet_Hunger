@@ -234,9 +234,8 @@
           "type": "toggle",
           "help": "Enable debug console output",
           "valueOptions": {
-            "sourceType": "GlobalValue",
-            "defaultValue": false,
-            "propertyName": "SHS_DevelopmentModeEnabled"
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
           },
           "position": 2
         }

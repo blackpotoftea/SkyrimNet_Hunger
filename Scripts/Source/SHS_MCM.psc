@@ -3,7 +3,7 @@ Scriptname SHS_MCM extends MCM_ConfigBase
 SHS_Main Property MainQuest Auto
 
 int Function GetVersion()
-    return 1
+    return 2
 EndFunction
 
 Event OnConfigInit()
@@ -39,6 +39,10 @@ Event OnSettingChange(string a_ID)
     ; Handle Serana hunger live update
     If a_ID == "iSeranaHungerLevel:Main"
         UpdateSeranaHunger()
+    elseIf a_ID == "bDevelopmentMode:Main"
+        bool status = GetModSettingBool("bDevelopmentMode:Main")
+        MainQuest.debugConsole("MCM: Setting development mode: "+status)
+        MainQuest.SHS_DevelopmentModeEnabled.SetValueInt(status as Int)
     Else
         LoadSettings()
     EndIf
@@ -82,7 +86,6 @@ Function LoadSettings()
 EndFunction
 
 Function UpdateSeranaHunger()
-    ; Called when slider moves - update Serana's hunger live
     Actor Serana = MainQuest.getActorSerana()
 
     if !Serana
@@ -92,12 +95,10 @@ Function UpdateSeranaHunger()
 
     int HungerLevel = GetModSettingInt("iSeranaHungerLevel:Main")
 
-    ; Use centralized function to ensure events trigger
     MainQuest.SetActorHunger(Serana, HungerLevel)
 
     MainQuest.debugConsole("MCM: Serana hunger set to " + HungerLevel)
 
-    ; Verify it was set
     int VerifyRank = Serana.GetFactionRank(MainQuest.SHS_BloodFaction)
     MainQuest.debugConsole("MCM: Verified rank = " + VerifyRank)
 EndFunction

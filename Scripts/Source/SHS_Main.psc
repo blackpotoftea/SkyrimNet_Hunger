@@ -1,12 +1,15 @@
-Scriptname SHS_Main extends Quest  
+Scriptname SHS_Main extends Quest
 
-Faction Property SHS_BloodFaction  Auto  
+Faction Property SHS_BloodFaction  Auto
 
-SPELL Property SHS_BoodHungerSpell  Auto  
+SPELL Property SHS_BoodHungerSpell  Auto
 
-MagicEffect Property SHS_BloodHunger  Auto  
+MagicEffect Property SHS_BloodHunger  Auto
 
-GlobalVariable Property SHS_DevelopmentModeEnabled  Auto  
+GlobalVariable Property SHS_DevelopmentModeEnabled  Auto
+
+; ModEvent for notifying other mods of vampire hunger state changes
+String Property EVENT_VAMPIRE_HUNGER = "SHS_VampireHungerChanged" AutoReadOnly  
 
 ActorBase Property DLC1Serana  Auto  
 ActorBase Property DLC1Harkon  Auto  
@@ -423,6 +426,26 @@ Function CheckHungerStateChange(Actor npc, int oldHunger, int newHunger)
     ; Only trigger event if state actually changed (not just hunger value)
     if oldState != newState
         generateSkyrimNetHungerEvent(npc, oldHunger, newHunger)
+        SendVampireHungerModEvent(npc, newHunger, newState)
+    endif
+EndFunction
+
+; Send ModEvent to notify other mods of vampire hunger state change
+Function SendVampireHungerModEvent(Actor npc, int hungerLevel, int hungerState)
+    if !npc
+        return
+    endif
+
+    int handle = ModEvent.Create(EVENT_VAMPIRE_HUNGER)
+    if handle
+        ModEvent.PushForm(handle, npc)
+        ModEvent.PushInt(handle, hungerLevel)
+        ModEvent.PushInt(handle, hungerState)
+        ModEvent.PushString(handle, GetHungerStateName(hungerLevel))
+        ModEvent.Send(handle)
+        debugConsole("Sent ModEvent: " + EVENT_VAMPIRE_HUNGER + " for " + npc.GetDisplayName() + " - State: " + hungerState + " (" + GetHungerStateName(hungerLevel) + ")")
+    else
+        debugConsole("Failed to create ModEvent: " + EVENT_VAMPIRE_HUNGER)
     endif
 EndFunction
 

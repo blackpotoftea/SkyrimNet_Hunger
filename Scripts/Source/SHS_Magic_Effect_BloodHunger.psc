@@ -78,7 +78,7 @@ Endevent
 bool Function CheckForUpdate()
     if SHSM
         int globalVersion = SHSM.getCurrentModVersion()
-        
+        SHSM.debugConsole("Comparing version, current: "+usedModVersion+" global: "+globalVersion)
         if usedModVersion < globalVersion
             SHSM.Console("SHS Update Detected: Removing outdated spell from " + selfRef.GetBaseObject().GetName())
             
