@@ -18,7 +18,7 @@ Event OnEffectStart(Actor npc, Actor akCaster)
         selfRef = npc
 
         usedModVersion = SHSM.getCurrentModVersion()
-        SHSM.Console("Apply effect to actor: "+npc.getbaseobject().getname())
+        SHSM.debugConsole("Apply effect to actor: "+npc.getbaseobject().getname())
         SHSM.ProcessActorUpdate(selfRef)
         float delay = Utility.RandomFloat(0.1, BaseInterval + TimeJitter)
         RegisterForSingleUpdateGameTime(delay)
@@ -31,45 +31,46 @@ EndEvent
 
 Event OnUpdateGameTime()
     if CheckForUpdate()
-        Return 
+        Return
     endif
-    
+
+    SHSM.debugConsole("Periodic update for " + selfRef.GetDisplayName() + " (interval: " + BaseInterval + "h)")
     SHSM.ProcessActorUpdate(selfRef)
     float delay = BaseInterval + Utility.RandomFloat(0.0, TimeJitter)
     RegisterForSingleUpdateGameTime(delay)
 EndEvent
 
 Event OnAnimationEvent(ObjectReference akSource, string asEventName)
-    SHSM.console("Animation event "+selfRef.getbaseobject().getname())
     if (asEventName == EVENT_VAMPIRE_FEED_ANIM) && (akSource == selfRef)
-        SHSM.console("Animation event "+ EVENT_VAMPIRE_FEED_ANIM +", recieved apply blood decal")
+        SHSM.debugConsole("Vampire Feed Animation detected for " + selfRef.GetDisplayName() + " - triggering FeedActor")
         SHSM.FeedActor(selfRef)
     endif
 endEvent
 
 Event OnFeedEvent(Form sender, string eventStatus)
     if ((sender as Actor) == selfRef)
+        SHSM.debugConsole("Mod Event '" + EVENT_BLOOD_DECAL + "' received for " + selfRef.GetDisplayName() + " - triggering FeedActor")
         SHSM.FeedActor(selfRef)
     endif
 endEvent
 
 Event OnAnimationEventUnregistered(ObjectReference akSource, string asEventName)
-	SHSM.debugConsole("Unregister Animation event for Blood Hunger "+selfRef.getbaseobject().getname())
+	SHSM.debugConsole("Animation event '" + asEventName + "' unregistered for " + selfRef.GetDisplayName())
     if keepAnimRegister && SHSM.IsActorLoaded(selfRef)
-        SHSM.console("Re-registering animations: "+keepAnimRegister)
+        SHSM.debugConsole("Re-registering animation events for " + selfRef.GetDisplayName())
         registerForBloodDecalAnim()
     endif
 endEvent
 
 function registerForBloodDecalAnim()
-    SHSM.console("Blood Hunger: register for animations event: '"+EVENT_VAMPIRE_FEED_ANIM+"'")
-    SHSM.console("Blood Hunger: register for mod event: '"+EVENT_BLOOD_DECAL+"'")
+    SHSM.debugConsole("Registering feed events for " + selfRef.GetDisplayName() + ": Animation='" + EVENT_VAMPIRE_FEED_ANIM + "', ModEvent='" + EVENT_BLOOD_DECAL + "'")
     RegisterForModEvent(EVENT_BLOOD_DECAL, "OnFeedEvent")
     RegisterForAnimationEvent(selfRef, EVENT_VAMPIRE_FEED_ANIM)
 endfunction
 
 
 Event OnEffectFinish(Actor npc, Actor akCaster)
+    SHSM.debugConsole("Blood Hunger effect ending for " + selfRef.GetDisplayName())
     keepAnimRegister = false
 Endevent
 

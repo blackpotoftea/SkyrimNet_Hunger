@@ -34,7 +34,7 @@
         },
         {
           "id": "fLordRate:Main",
-          "text": "Vampire Lord Rate",
+          "text": "Volkihar Clan Rate",
           "type": "slider",
           "help": "Hunger rate for Serana, Harkon, and Valerica",
           "valueOptions": {
@@ -138,47 +138,71 @@
         },
         {
           "id": "iAmountToReduceFull:Main",
-          "text": "Combat Feed Reduction",
+          "text": "Combat Feed Base",
           "type": "slider",
-          "help": "Hunger reduction when feeding in combat (full drain)",
+          "help": "Base hunger reduction for combat feeding (full drain). Modified by hunger state and victim quality.",
           "valueOptions": {
-            "min": 0,
+            "min": 20,
             "max": 100,
             "step": 5,
-            "defaultValue": 100,
+            "defaultValue": 80,
             "sourceType": "ModSettingInt"
           },
           "position": 14
         },
         {
           "id": "iAmountToReducePartial:Main",
-          "text": "Normal Feed Reduction",
+          "text": "Stealth Feed Base",
           "type": "slider",
-          "help": "Hunger reduction for partial feeding (quick bite)",
+          "help": "Base hunger reduction for stealth feeding (quick bite). Modified by hunger state and victim quality.",
           "valueOptions": {
-            "min": 0,
-            "max": 100,
+            "min": 10,
+            "max": 80,
             "step": 5,
-            "defaultValue": 100,
+            "defaultValue": 40,
             "sourceType": "ModSettingInt"
           },
           "position": 15
         },
         {
-          "text": "Manual Controls",
+          "text": "SkyrimNet Integration",
           "type": "header",
-          "position": 18
+          "position": 16
         },
         {
           "text": "",
           "type": "header",
-          "position": 19
+          "position": 17
+        },
+        {
+          "id": "iEventTTL:Main",
+          "text": "Event Duration (TTL)",
+          "type": "slider",
+          "help": "How long hunger state change events stay visible in SkyrimNet (in seconds)",
+          "valueOptions": {
+            "min": 30,
+            "max": 600,
+            "step": 10,
+            "defaultValue": 120,
+            "sourceType": "ModSettingInt"
+          },
+          "position": 18
+        },
+        {
+          "text": "Manual Controls",
+          "type": "header",
+          "position": 20
+        },
+        {
+          "text": "",
+          "type": "header",
+          "position": 21
         },
         {
           "id": "iSeranaHungerLevel:Main",
           "text": "Serana Hunger Level",
           "type": "slider",
-          "help": "Adjust Serana's hunger level (updates live)",
+          "help": "Adjust Serana's hunger level (updates live). States: 0-25 Satiated, 26-75 Thirsty, 76-90 Starving, 91-100 Feral",
           "valueOptions": {
             "min": 0,
             "max": 100,
@@ -186,7 +210,7 @@
             "defaultValue": 0,
             "sourceType": "ModSettingInt"
           },
-          "position": 20
+          "position": 22
         }
       ]
     },

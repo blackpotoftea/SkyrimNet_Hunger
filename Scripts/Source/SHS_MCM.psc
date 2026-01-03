@@ -24,10 +24,10 @@ Event OnPageSelect(String a_page)
     if Serana && Serana.IsInFaction(MainQuest.SHS_BloodFaction)
         int CurrentHunger = Serana.GetFactionRank(MainQuest.SHS_BloodFaction)
         SetModSettingInt("iSeranaHungerLevel:Main", CurrentHunger)
-        MainQuest.console("MCM: Serana hunger displayed: " + CurrentHunger)
+        MainQuest.debugConsole("MCM: Serana hunger displayed: " + CurrentHunger)
     else
         SetModSettingInt("iSeranaHungerLevel:Main", 0)
-        MainQuest.console("MCM: Serana not in faction, displaying 0")
+        MainQuest.debugConsole("MCM: Serana not in faction, displaying 0")
     endif
 
     RefreshMenu()
@@ -74,6 +74,9 @@ Function LoadSettings()
     MainQuest.AmountToReducePartial = GetModSettingInt("iAmountToReducePartial:Main")
     MainQuest.debugConsole("AmountToReducePartial: " + MainQuest.AmountToReducePartial)
 
+    MainQuest.EventTTL = GetModSettingInt("iEventTTL:Main")
+    MainQuest.debugConsole("EventTTL: " + MainQuest.EventTTL)
+
     MainQuest.SHS_DevelopmentModeEnabled.SetValueInt(GetModSettingBool("bDevelopmentMode:Main") as Int)
     MainQuest.debugConsole("DevelopmentMode: " + MainQuest.SHS_DevelopmentModeEnabled.GetValueInt())
 EndFunction
@@ -89,19 +92,10 @@ Function UpdateSeranaHunger()
 
     int HungerLevel = GetModSettingInt("iSeranaHungerLevel:Main")
 
-    ; Ensure Serana is in the faction
-    if !Serana.IsInFaction(MainQuest.SHS_BloodFaction)
-        Serana.AddToFaction(MainQuest.SHS_BloodFaction)
-        MainQuest.console("MCM: Added Serana to SHS_BloodFaction")
-    endif
+    ; Use centralized function to ensure events trigger
+    MainQuest.SetActorHunger(Serana, HungerLevel)
 
-    ; Set hunger level
-    Serana.SetFactionRank(MainQuest.SHS_BloodFaction, HungerLevel)
-
-    ; Update LastSeen timer
-    StorageUtil.SetFloatValue(Serana, "SHS_LastSeen", Utility.GetCurrentGameTime())
-
-    MainQuest.console("MCM: Serana hunger set to " + HungerLevel)
+    MainQuest.debugConsole("MCM: Serana hunger set to " + HungerLevel)
 
     ; Verify it was set
     int VerifyRank = Serana.GetFactionRank(MainQuest.SHS_BloodFaction)

@@ -14,7 +14,7 @@ ActorBase Property DLC1Valerica  Auto
 
 Location Property DLC1SoulCairnLocation  Auto  
 
-Keyword Property LocTypeVampireLair  Auto  
+Keyword Property LocTypeVampireLair  Auto
 
 float Property BaseRate = 5.0 Auto          ; Standard hunger/hour
 Float Property LordRate = 1.0 Auto          ; Serana/Harkon/Valerica rate
@@ -22,14 +22,44 @@ Float Property TeammateRate = 2.0 Auto      ; Active Follower rate
 
 Float Property SimulationThreshold = 8.0 Auto ; Hours passed before "Life Sim" kicks in
 Int Property FeedingChance = 75 Auto          ; % Chance they ate while you were gone
-Int Property FollowerHuntChance = 60 Auto 
+Int Property FollowerHuntChance = 60 Auto
 Float Property SleepThreshold = 4.0 Auto
-int Property AmountToReduceFull = 100 Auto
-int Property AmountToReducePartial = 100 Auto
+int Property AmountToReduceFull = 80 Auto      ; Combat feeding - full drain
+int Property AmountToReducePartial = 40 Auto   ; willing feeding target have kept alive - partial bite
+int Property EventTTL = 120 Auto               ; Event Time-To-Live in seconds (SkyrimNet)
 int Property CURRENT_MOD_VERSION = 1 Auto
 
 Function startup()
     Console("SkyrimNet_Hunger loaded...")
+    registerEventSchemaHunger()
+EndFunction
+
+; Register the vampire_hunger event schema with SkyrimNet
+Function registerEventSchemaHunger(bool isEphemeral = true)
+
+    debugConsole("Start Registered vampire_hunger event schema with SkyrimNet")
+        String fieldsJson = "[" + \
+        "{\"name\":\"npc_name\",\"type\":0,\"required\":true,\"description\":\"Display name of the vampire\"}," + \
+        "{\"name\":\"hunger_level\",\"type\":1,\"required\":true,\"description\":\"Current hunger level (0-100)\"}," + \
+        "{\"name\":\"hunger_state\",\"type\":1,\"required\":true,\"description\":\"Hunger state ID (0=Satiated, 1=Thirsty, 2=Starving, 3=Feral)\"}," + \
+        "{\"name\":\"state_name\",\"type\":0,\"required\":true,\"description\":\"Human-readable state name\"}," + \
+        "{\"name\":\"previous_state\",\"type\":0,\"required\":false,\"description\":\"Previous hunger state name\",\"defaultValue\":\"Unknown\"}" + \
+        "]"
+
+    String formatTemplatesJson = "{" + \
+        "\"recent_events\":\"**{{npc_name}}** becomes {{state_name}}{{#if previous_state}} (was {{previous_state}}){{/if}} ({{time_desc}})\"," + \
+        "\"raw\":\"{{npc_name}} -> {{state_name}}\"," + \
+        "\"compact\":\"{{npc_name}}: {{state_name}} ({{hunger_level}})\"," + \
+        "\"verbose\":\"Vampire Hunger: {{npc_name}} transitioned to {{state_name}} - Level: {{hunger_level}}/100, State ID: {{hunger_state}}{{#if previous_state}}, Previous: {{previous_state}}{{/if}}\"" + \
+        "}"
+    
+
+
+    SkyrimNetApi.RegisterEventSchema("vampire_hunger", "Vampire Hunger State Change", \
+                                "A vampire's hunger state has changed (Satiated/Thirsty/Starving/Feral)", \
+                                fieldsJson, formatTemplatesJson, isEphemeral, 120000); true, false)
+    
+    debugConsole("End Registered vampire_hunger event schema with SkyrimNet")
 EndFunction
 
 
@@ -37,8 +67,6 @@ Function ProcessActorUpdate(Actor akTarget)
     if !akTarget || akTarget.IsDead()
         Return
     endif
-
-    debugConsole("ProcessActorUpdate() called for: " + akTarget.GetDisplayName())
     float CurrentTime = Utility.GetCurrentGameTime()
 
     ; ---------------------------------------------------------
@@ -51,8 +79,7 @@ Function ProcessActorUpdate(Actor akTarget)
     ; A) VALERICA
     if BaseNPC == DLC1Valerica
         if akTarget.IsInLocation(DLC1SoulCairnLocation)
-            akTarget.SetFactionRank(SHS_BloodFaction, 0)
-            StorageUtil.SetFloatValue(akTarget, "SHS_LastSeen", CurrentTime)
+            SetActorHunger(akTarget, 0)
             Return
         endif
         CurrentRate = LordRate
@@ -72,11 +99,10 @@ Function ProcessActorUpdate(Actor akTarget)
     ; ---------------------------------------------------------
     ; We keep this because it prevents boss fights (Harkon) starting with hunger debuffs.
     Location CurrentLoc = akTarget.GetCurrentLocation()
-    
+
     if CurrentLoc && CurrentLoc.HasKeyword(LocTypeVampireLair)
-        debugConsole("Actor in Vampire Lair. Hunger Reset.")
-        akTarget.SetFactionRank(SHS_BloodFaction, 0)
-        StorageUtil.SetFloatValue(akTarget, "SHS_LastSeen", CurrentTime)
+        debugConsole(akTarget.GetDisplayName() + " in Vampire Lair - resetting hunger to 0")
+        SetActorHunger(akTarget, 0)
         Return ; EXIT
     endif
 
@@ -85,9 +111,7 @@ Function ProcessActorUpdate(Actor akTarget)
     ; 3. INITIALIZATION
     ; ---------------------------------------------------------
     if !akTarget.IsInFaction(SHS_BloodFaction)
-        akTarget.AddToFaction(SHS_BloodFaction)
-        akTarget.SetFactionRank(SHS_BloodFaction, 0)
-        StorageUtil.SetFloatValue(akTarget, "SHS_LastSeen", CurrentTime)
+        SetActorHunger(akTarget, 0)
         Return
     endif
 
@@ -113,18 +137,18 @@ Function ProcessActorUpdate(Actor akTarget)
     ; If it's a follower AND enough time passed (Sleep/Wait), they try to hunt.
     if IsFollower && HoursPassed >= SleepThreshold
         
-        console("Follower Sleep/Wait Detected (" + HoursPassed + "h). Rolling Hunt Chance.")
+        debugConsole(akTarget.GetDisplayName() + ": Follower sleep/wait detected (" + HoursPassed + "h) - rolling hunt chance")
         int DiceRoll = Utility.RandomInt(0, 100)
         
         if DiceRoll <= FollowerHuntChance
             ; SUCCESS: They fed while you slept.
             NewHunger = 0 
-            console("Hunt SUCCESS. Hunger reset to 0.")
+            debugConsole(akTarget.GetDisplayName() + ": Hunt SUCCESS - hunger reset to 0")
         else
             ; FAIL: They just waited. Add normal hunger.
             int AddedHunger = (HoursPassed * CurrentRate) as Int
             NewHunger = CurrentHunger + AddedHunger
-            console("Hunt FAILED. Adding " + AddedHunger + " hunger.")
+            debugConsole(akTarget.GetDisplayName() + ": Hunt FAILED - adding " + AddedHunger + " hunger")
         endif
 
 
@@ -132,7 +156,7 @@ Function ProcessActorUpdate(Actor akTarget)
     ; If not a follower, and player was gone for > 24 hours.
     elseif !IsFollower && HoursPassed >= SimulationThreshold
         
-        console("Long Absence (>24h). Simulating life.")
+        debugConsole(akTarget.GetDisplayName() + ": Long absence (" + HoursPassed + "h) - simulating life")
         int DiceRoll = Utility.RandomInt(0, 100)
         
         if DiceRoll <= FeedingChance
@@ -145,7 +169,7 @@ Function ProcessActorUpdate(Actor akTarget)
     ; --- BRANCH C: LINEAR UPDATE ---
     ; Standard active gameplay update.
     else
-        console("Standard Linear Update.")
+        debugConsole(akTarget.GetDisplayName() + ": Standard update (" + HoursPassed + "h) - adding " + ((HoursPassed * CurrentRate) as Int) + " hunger")
         int AddedHunger = (HoursPassed * CurrentRate) as Int
         NewHunger = CurrentHunger + AddedHunger
     endif
@@ -154,50 +178,82 @@ Function ProcessActorUpdate(Actor akTarget)
     ; ---------------------------------------------------------
     ; 6. APPLY & CAP
     ; ---------------------------------------------------------
-    if NewHunger > 100
-        NewHunger = 100
-    endif
-
-    if NewHunger != CurrentHunger
-        akTarget.SetFactionRank(SHS_BloodFaction, NewHunger)
-    endif
-    
-    StorageUtil.SetFloatValue(akTarget, "SHS_LastSeen", CurrentTime)
+    SetActorHunger(akTarget, NewHunger)
 
 EndFunction
 
-Function FeedActor(Actor akTarget)
+Function FeedActor(Actor akTarget, Actor akVictim = None)
     if !akTarget
         Return
     endif
-    
-    int AmountToReduce = 0
-    
 
+    int CurrentHunger = akTarget.GetFactionRank(SHS_BloodFaction)
+    int AmountToReduce = 0
+    int VictimBonus = 0
+
+    ; --- Calculate base feeding amount based on combat state ---
     if akTarget.IsInCombat()
-        AmountToReduce = AmountToReduceFull ; Combat fed target fully drained
-        console("FeedActor: " + akTarget.GetDisplayName() + " fed in combat. reducing by -"+AmountToReduceFull)
+        ; Combat feeding: full drain with some variance (80-100%)
+        AmountToReduce = (AmountToReduceFull * Utility.RandomInt(80, 100)) / 100
+        debugConsole(akTarget.GetDisplayName() + ": Combat feeding (desperate drain)")
     else
-        AmountToReduce = AmountToReducePartial ; Partial feed (quick bite)
-        console("FeedActor: " + akTarget.GetDisplayName() + " fed in combat. reducing by -"+AmountToReducePartial)
+        ; Non-combat feeding: partial with variance (60-100%)
+        AmountToReduce = (AmountToReducePartial * Utility.RandomInt(60, 100)) / 100
+        debugConsole(akTarget.GetDisplayName() + ": Controlled feeding (partial)")
     endif
-    
-    ; --- Apply Reduction ---
-    int Current = akTarget.GetFactionRank(SHS_BloodFaction)
-    int NewVal = Current - AmountToReduce
-    
-    if NewVal < 0
-        NewVal = 0
+
+    ; --- Calculate victim quality bonus ---
+    if akVictim
+        ; Base victim bonus: 10-30 points
+        VictimBonus = Utility.RandomInt(10, 30)
+
+        ; Stronger victims provide more sustenance
+        int VictimLevel = akVictim.GetLevel()
+        if VictimLevel >= 30
+            VictimBonus += 20  ; Powerful victim
+        elseif VictimLevel >= 15
+            VictimBonus += 10  ; Average victim
+        endif
+
+        ; Essential/important NPCs provide better sustenance
+        if akVictim.IsEssential()
+            VictimBonus += 15
+        endif
+
+        debugConsole(akTarget.GetDisplayName() + ": Feeding on " + akVictim.GetDisplayName() + " (bonus: +" + VictimBonus + ")")
     endif
-    
-    console("setting hunger rank: "+ NewVal)
-    if NewVal != Current
-        akTarget.SetFactionRank(SHS_BloodFaction, NewVal)
+
+    ; --- Hunger modifier: starving vampires feed more desperately ---
+    float HungerMultiplier = 1.0
+    if CurrentHunger >= 91  ; Feral state
+        HungerMultiplier = 1.5
+        debugConsole(akTarget.GetDisplayName() + ": Feral state - desperate feeding (+50% effectiveness)")
+    elseif CurrentHunger >= 76  ; Starving state
+        HungerMultiplier = 1.25
+        debugConsole(akTarget.GetDisplayName() + ": Starving - aggressive feeding (+25% effectiveness)")
+    elseif CurrentHunger <= 25  ; Satiated state
+        HungerMultiplier = 0.7
+        debugConsole(akTarget.GetDisplayName() + ": Already satiated - partial feeding only (-30% effectiveness)")
     endif
-    
-    ; CRITICAL: Reset the "LastSeen" timer.
-    StorageUtil.SetFloatValue(akTarget, "SHS_LastSeen", Utility.GetCurrentGameTime())
-    
+
+    ; --- Calculate final reduction ---
+    int TotalReduction = ((AmountToReduce + VictimBonus) * HungerMultiplier) as int
+
+    ; Combat vampires trigger bite attacks more often
+    if akTarget.IsInCombat()
+        ; 75% chance to trigger vampire bite ability on combat feeds
+        if Utility.RandomInt(1, 100) <= 75
+            debugConsole(akTarget.GetDisplayName() + ": Combat feeding triggered vampire bite attack!")
+            ; TODO: Trigger vampire bite spell/ability here if you have one defined
+            ; akTarget.Cast(VampireBiteSpell, akVictim)
+        endif
+    endif
+
+    ; --- Apply the reduction ---
+    int NewHunger = CurrentHunger - TotalReduction
+    debugConsole(akTarget.GetDisplayName() + " fed: " + CurrentHunger + " -> " + NewHunger + " (-" + TotalReduction + " hunger)")
+    SetActorHunger(akTarget, NewHunger)
+
 EndFunction
 
 ; Bool Function IsThrallNearby(Actor akVampire)
@@ -300,17 +356,108 @@ int Function GetHungerState(int hungerRank)
     endif
 EndFunction
 
-; Returns hunger state name as string
-string Function GetHungerStateName(int hungerRank)
-    int state = GetHungerState(hungerRank)
 
-    if state == 0
+string Function GetHungerStateName(int hungerRank)
+    int hungerState = GetHungerState(hungerRank)
+
+    if hungerState == 0
         return "Satiated"
-    elseif state == 1
+    elseif hungerState == 1
         return "Thirsty"
-    elseif state == 2
+    elseif hungerState == 2
         return "Starving"
     else
         return "Feral"
     endif
+EndFunction
+
+Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHungerLevel)
+    if !npc
+        return
+    endif
+
+    string npcName = npc.GetDisplayName()
+    int hungerState = GetHungerState(newHungerLevel)
+    string stateName = GetHungerStateName(newHungerLevel)
+    string previousStateName = GetHungerStateName(oldHungerLevel)
+
+    ; Create unique event ID using FormID and current time
+    String eventId = "vampirehunger_" + npc.GetFormID() + "_" + (Utility.GetCurrentRealTime() as Int)
+
+    ; Create event description
+    string eventDescription = npcName + " becomes " + stateName + " (was " + previousStateName + ")"
+
+    ; Build event data JSON matching the schema
+    String eventDataJson = "{"
+    eventDataJson += "\"npc_name\":\"" + npcName + "\","
+    eventDataJson += "\"hunger_level\":" + newHungerLevel + ","
+    eventDataJson += "\"hunger_state\":" + hungerState + ","
+    eventDataJson += "\"state_name\":\"" + stateName + "\","
+    eventDataJson += "\"previous_state\":\"" + previousStateName + "\""
+    eventDataJson += "}"
+
+    ; Convert seconds to milliseconds for SkyrimNet API
+    int ttlMs = EventTTL * 1000
+
+    debugConsole("HUNGER EVENT: " + eventDescription)
+
+    if !SkyrimNetApi.ValidateEventData("vampire_hunger", eventDataJson)
+        console("ERROR: Validation failed for event data!")
+        return
+    EndIf
+
+    ; Register short-lived event with SkyrimNet
+    int result = SkyrimNetApi.RegisterShortLivedEvent(eventId, "vampire_hunger", eventDescription, eventDataJson, ttlMs, npc, npc)
+    debugConsole("SkyrimNet event registered (TTL: " + EventTTL + "s): " + result)
+EndFunction
+
+; Check if hunger state has changed and trigger event if needed
+Function CheckHungerStateChange(Actor npc, int oldHunger, int newHunger)
+    if !npc
+        return
+    endif
+
+    int oldState = GetHungerState(oldHunger)
+    int newState = GetHungerState(newHunger)
+
+    ; Only trigger event if state actually changed (not just hunger value)
+    if oldState != newState
+        generateSkyrimNetHungerEvent(npc, oldHunger, newHunger)
+    endif
+EndFunction
+
+
+Function SetActorHunger(Actor npc, int newHungerLevel)
+    if !npc
+        return
+    endif
+
+    ; Ensure actor is in faction
+    if !npc.IsInFaction(SHS_BloodFaction)
+        npc.AddToFaction(SHS_BloodFaction)
+        debugConsole("SetActorHunger: Added " + npc.GetDisplayName() + " to SHS_BloodFaction")
+    endif
+
+    ; Get current hunger
+    int currentHunger = npc.GetFactionRank(SHS_BloodFaction)
+
+    ; Cap the new value
+    if newHungerLevel < 0
+        newHungerLevel = 0
+    elseif newHungerLevel > 100
+        newHungerLevel = 100
+    endif
+
+    ; Only update if changed
+    if newHungerLevel != currentHunger
+        ; Check for state changes and trigger events
+        CheckHungerStateChange(npc, currentHunger, newHungerLevel)
+
+        ; Apply the new hunger level
+        npc.SetFactionRank(SHS_BloodFaction, newHungerLevel)
+
+        debugConsole(npc.GetDisplayName() + " hunger updated: " + currentHunger + " -> " + newHungerLevel + " (" + GetHungerStateName(newHungerLevel) + ")")
+    endif
+
+    StorageUtil.SetFloatValue(npc, "SHS_LastSeen", Utility.GetCurrentGameTime())
 EndFunction
