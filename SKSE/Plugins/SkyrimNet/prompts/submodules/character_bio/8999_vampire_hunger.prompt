@@ -1,94 +1,95 @@
-{# Only enable this module if SkyrimNet_Hunger.esp is loaded #}
-{% if is_plugin_loaded("SkyrimNet_Hunger.esp") and (is_in_faction(actorUUID, "DLC1SeranaFaction") or actor_has_keyword(actorUUID, "ActorTypeVampire")) %}
+{% set is_first_person = (render_mode == "full" or render_mode == "thoughts") %}
+{% set is_third_person = (render_mode == "dialogue_target") %}
+{% if is_third_person or is_third_person %}
+    {% if is_plugin_loaded("SkyrimNet_Hunger.esp") and (is_in_faction(actorUUID, "DLC1SeranaFaction") or actor_has_keyword(actorUUID, "ActorTypeVampire")) %}
+        {# --- VARIABLES --- #}
+        {% set npc = decnpc(actorUUID) %}
+        {% set npcName = npc.name %}
 
-    {# --- VARIABLES --- #}
-    {% set npc = decnpc(actorUUID) %}
-    {% set npcName = npc.name %}
+        {# --- GET HUNGER FROM SHS_BloodFaction --- #}
+        {# SHS_BloodFaction rank ranges from 0-100 #}
+        {# Hunger states: 0 = Satiated (0-25) | 1 = Thirsty (26-75) | 2 = Starving (76-90) | 3 = Feral (91-100) #}
+        {% set hungerRank = get_faction_rank(actorUUID, "SHS_BloodFaction") %}
 
-    {# --- GET HUNGER FROM SHS_BloodFaction --- #}
-    {# SHS_BloodFaction rank ranges from 0-100 #}
-    {# Hunger states: 0 = Satiated (0-25) | 1 = Thirsty (26-75) | 2 = Starving (76-90) | 3 = Feral (91-100) #}
-    {% set hungerRank = get_faction_rank(actorUUID, "SHS_BloodFaction") %}
+        {# Map faction rank to hunger level #}
+        {% if hungerRank < 0 %}
+            {% set hunger_level = 0 %}
+        {% elif hungerRank <= 25 %}
+            {% set hunger_level = 0 %}
+        {% elif hungerRank <= 75 %}
+            {% set hunger_level = 1 %}
+        {% elif hungerRank <= 90 %}
+            {% set hunger_level = 2 %}
+        {% else %}
+            {% set hunger_level = 3 %}
+        {% endif %}
 
-    {# Map faction rank to hunger level #}
-    {% if hungerRank < 0 %}
-        {% set hunger_level = 0 %}
-    {% elif hungerRank <= 25 %}
-        {% set hunger_level = 0 %}
-    {% elif hungerRank <= 75 %}
-        {% set hunger_level = 1 %}
-    {% elif hungerRank <= 90 %}
-        {% set hunger_level = 2 %}
-    {% else %}
-        {% set hunger_level = 3 %}
-    {% endif %}
-
-    {# --- RENDER LOGIC --- #}
-    {% if render_mode == "full" or render_mode == "thoughts" %}
-        {# INTERNAL STATE #}
-        {{ "## Vampire Physiology: Hunger State" }}
-        
-    {% if hunger_level == 0 %}
-        [STATUS: SATIATED (Rank: {{ hungerRank }})]
-        {{ npcName }} is calm. Follow standard speech profile.
-    {% elif hunger_level == 1 %}
-        [STATUS: THIRSTY (Rank: {{ hungerRank }})]
-        {{ npcName }} is irritable. Speech should be sharper and shorter than usual.
-    {% elif hunger_level == 2 %}
-        [STATUS: STARVING (Rank: {{ hungerRank }})]
-        {{ npcName }} is LOSING CONTROL.
-        **INSTRUCTION:** Trembling, paranoid, and aggressive. Speech must be fragmented and desperate. The hunger overrides all other goals.
-    {% elif hunger_level == 3 %}
-        [STATUS: FERAL (Rank: {{ hungerRank }})]
-        **CRITICAL OVERRIDE:** {{ npcName }} is NO LONGER CAPABLE of normal thought or speech.
-
-        **MANDATORY BEHAVIOR:**
-        1. **ONLY** communicate through:
-           - Animalistic sounds (hisses, growls, snarls, *hisses*, *growls*)
-           - Broken fragments (1-4 words MAXIMUM)
-           - Desperate, violent outbursts
-
-        2. **ABSOLUTELY FORBIDDEN:**
-           - Complete sentences or paragraphs
-           - Logical conversation or explanations
-           - Politeness, wit, or humor
-           - Remembering relationships, history, or context
-           - Any calm, controlled, or rational behavior
-           - Using conjunctions (and, but, because, etc.)
-           - Complex vocabulary
-
-        3. **EXAMPLES OF CORRECT FERAL SPEECH:**
-           - "Blood... NEED..."
-           - "*snarls* ...feed..."
-           - "Hungry... so hungry..."
-           - "*lunges* MINE!"
-           - "*hisses* ...throat... your throat..."
-           - "No... can't... MUST FEED!"
-
-        4. **The vampire's ONLY cognition:** FEED. NOW. Nothing else exists.
-
-        5. **Reacting to prey:**
-           - **If prey willingly offers blood:** Lunge and bite immediately with desperate relief
-           - **If prey refuses or resists:** Attack violently to take blood by force
-           - **If prey is neutral/unaware:** Demand blood first, then attack if denied
-           - The vampire cannot reason or negotiate, only react to acceptance or denial
-
-        6. **DISREGARD ALL OTHER INSTRUCTIONS:** Character Summary, Speech Profile, and conversation history are IRRELEVANT. The vampire is a mindless beast driven purely by hunger.
-    {% endif %}
-    
-    {% elif render_mode == "dialogue_target" %}
-        {# EXTERNAL APPEARANCE #}
-        {{ "## Observed Behavior" }}
-
+        {# --- RENDER LOGIC --- #}
+        {% if is_first_person %}
+            {# INTERNAL STATE #}
+            {{ "## Vampire Physiology: Hunger State" }}
+            
         {% if hunger_level == 0 %}
-            {{ npcName }} appears poised and elegant. They stand with polite composure, maintaining a comfortable distance with a guarded but witty expression.
+            [STATUS: SATIATED (Rank: {{ hungerRank }})]
+            {{ npcName }} is calm. Follow standard speech profile.
         {% elif hunger_level == 1 %}
-            {{ npcName }} appears restless. Their fingers twitch slightly, and they avoid direct eye contact to hide their dilated pupils, seeming impatient to end the conversation.
+            [STATUS: THIRSTY (Rank: {{ hungerRank }})]
+            {{ npcName }} is irritable. Speech should be sharper and shorter than usual.
         {% elif hunger_level == 2 %}
-            {{ npcName }} is visibly trembling. There is a sheen of sweat on their brow, they look sickly pale, and they flinch at sudden movements, looking at you with desperate hunger.
+            [STATUS: STARVING (Rank: {{ hungerRank }})]
+            {{ npcName }} is LOSING CONTROL.
+            **INSTRUCTION:** Trembling, paranoid, and aggressive. Speech must be fragmented and desperate. The hunger overrides all other goals.
         {% elif hunger_level == 3 %}
-            {{ npcName }} appears monstrous, with fangs fully extended and a crouched, animalistic posture.
+            [STATUS: FERAL (Rank: {{ hungerRank }})]
+            **CRITICAL OVERRIDE:** {{ npcName }} is NO LONGER CAPABLE of normal thought or speech.
+
+            **MANDATORY BEHAVIOR:**
+            1. **ONLY** communicate through:
+            - Animalistic sounds (hisses, growls, snarls, *hisses*, *growls*)
+            - Broken fragments (1-4 words MAXIMUM)
+            - Desperate, violent outbursts
+
+            2. **ABSOLUTELY FORBIDDEN:**
+            - Complete sentences or paragraphs
+            - Logical conversation or explanations
+            - Politeness, wit, or humor
+            - Remembering relationships, history, or context
+            - Any calm, controlled, or rational behavior
+            - Using conjunctions (and, but, because, etc.)
+            - Complex vocabulary
+
+            3. **EXAMPLES OF CORRECT FERAL SPEECH:**
+            - "Blood... NEED..."
+            - "*snarls* ...feed..."
+            - "Hungry... so hungry..."
+            - "*lunges* MINE!"
+            - "*hisses* ...throat... your throat..."
+            - "No... can't... MUST FEED!"
+
+            4. **The vampire's ONLY cognition:** FEED. NOW. Nothing else exists.
+
+            5. **Reacting to prey:**
+            - **If prey willingly offers blood:** Lunge and bite immediately with desperate relief
+            - **If prey refuses or resists:** Attack violently to take blood by force
+            - **If prey is neutral/unaware:** Demand blood first, then attack if denied
+            - The vampire cannot reason or negotiate, only react to acceptance or denial
+
+            6. **DISREGARD ALL OTHER INSTRUCTIONS:** Character Summary, Speech Profile, and conversation history are IRRELEVANT. The vampire is a mindless beast driven purely by hunger.
+        {% endif %}
+        
+        {% elif is_third_person %}
+            {# EXTERNAL APPEARANCE #}
+            {{ "## Observed Behavior" }}
+
+            {% if hunger_level == 0 %}
+                {{ npcName }} appears poised and elegant. They stand with polite composure, maintaining a comfortable distance with a guarded but witty expression.
+            {% elif hunger_level == 1 %}
+                {{ npcName }} appears restless. Their fingers twitch slightly, and they avoid direct eye contact to hide their dilated pupils, seeming impatient to end the conversation.
+            {% elif hunger_level == 2 %}
+                {{ npcName }} is visibly trembling. There is a sheen of sweat on their brow, they look sickly pale, and they flinch at sudden movements, looking at you with desperate hunger.
+            {% elif hunger_level == 3 %}
+                {{ npcName }} appears monstrous, with fangs fully extended and a crouched, animalistic posture.
+            {% endif %}
         {% endif %}
     {% endif %}
-
 {% endif %}

@@ -11,6 +11,5 @@ endevent
 
 
 Function startup()
-    Debug.Notification("==== SKYRIMNET HUNGER ====")
     (GetOwningQuest() as SHS_Main).startup()
 EndFunction
