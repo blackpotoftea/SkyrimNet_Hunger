@@ -1,7 +1,8 @@
-{% set is_first_person = (render_mode == "full" or render_mode == "thoughts") %}
+{% set is_first_person = (render_mode == "full" or render_mode == "thoughts") %} {# version 1.0 #}
 {% set is_third_person = (render_mode == "dialogue_target") %}
-{% if is_third_person or is_third_person %}
+{% if is_first_person or is_third_person %}
     {% if is_plugin_loaded("SkyrimNet_Hunger.esp") and (is_in_faction(actorUUID, "DLC1SeranaFaction") or actor_has_keyword(actorUUID, "ActorTypeVampire")) %}
+
         {# --- VARIABLES --- #}
         {% set npc = decnpc(actorUUID) %}
         {% set npcName = npc.name %}
@@ -76,7 +77,7 @@
 
             6. **DISREGARD ALL OTHER INSTRUCTIONS:** Character Summary, Speech Profile, and conversation history are IRRELEVANT. The vampire is a mindless beast driven purely by hunger.
         {% endif %}
-        
+
         {% elif is_third_person %}
             {# EXTERNAL APPEARANCE #}
             {{ "## Observed Behavior" }}
@@ -91,5 +92,6 @@
                 {{ npcName }} appears monstrous, with fangs fully extended and a crouched, animalistic posture.
             {% endif %}
         {% endif %}
-    {% endif %}
-{% endif %}
+    
+    {% endif %} {# is_plugin_loaded("SkyrimNet_Hunger.esp")#}
+{% endif %} {# if is_third_person or is_third_person #}
