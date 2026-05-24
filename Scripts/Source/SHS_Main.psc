@@ -157,7 +157,7 @@ Function registerEventSchemaHunger(bool isEphemeral = true)
 
     SkyrimNetApi.RegisterEventSchema("vampire_hunger", "Vampire Hunger State Change", \
                                 "A vampire's hunger state has changed (Satiated/Thirsty/Starving/Feral)", \
-                                fieldsJson, formatTemplatesJson, isEphemeral, 120000); true, false)
+                                fieldsJson, formatTemplatesJson, isEphemeral, 120000, true, false)
     
     debugConsole("End Registered vampire_hunger event schema with SkyrimNet")
 EndFunction
