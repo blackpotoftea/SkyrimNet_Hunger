@@ -1,4 +1,4 @@
-{% set is_first_person = (render_mode == "full" or render_mode == "thoughts") %} {# version 1.0 #}
+{% set is_first_person = (render_mode == "full" or render_mode == "thoughts") %} {# version 1.1 #}
 {% set is_third_person = (render_mode == "dialogue_target") %}
 {% if is_first_person or is_third_person %}
     {% if is_plugin_loaded("SkyrimNet_Hunger.esp") and (is_in_faction(actorUUID, "DLC1SeranaFaction") or actor_has_keyword(actorUUID, "ActorTypeVampire")) %}
@@ -12,37 +12,37 @@
         {# Hunger states: 0 = Satiated (0-25) | 1 = Thirsty (26-75) | 2 = Starving (76-90) | 3 = Feral (91-100) #}
         {% set hungerRank = get_faction_rank(actorUUID, "SHS_BloodFaction") %}
 
-        {# Map faction rank to hunger level #}
-        {% if hungerRank < 0 %}
+        {# Map faction rank to hunger level and status string #}
+        {% if hungerRank <= 25 %}
             {% set hunger_level = 0 %}
-        {% elif hungerRank <= 25 %}
-            {% set hunger_level = 0 %}
+            {% set hungerStatus = "SATIATED" %}
         {% elif hungerRank <= 75 %}
             {% set hunger_level = 1 %}
+            {% set hungerStatus = "THIRSTY" %}
         {% elif hungerRank <= 90 %}
             {% set hunger_level = 2 %}
+            {% set hungerStatus = "STARVING" %}
         {% else %}
             {% set hunger_level = 3 %}
+            {% set hungerStatus = "FERAL" %}
         {% endif %}
 
         {# --- RENDER LOGIC --- #}
         {% if is_first_person %}
             {# INTERNAL STATE #}
             {{ "## Vampire Physiology: Hunger State" }}
-            
+
+            [STATUS: {{ hungerStatus }}]
+
         {% if hunger_level == 0 %}
-            [STATUS: SATIATED (Rank: {{ hungerRank }})]
             {{ npcName }} is calm. Follow standard speech profile.
         {% elif hunger_level == 1 %}
-            [STATUS: THIRSTY (Rank: {{ hungerRank }})]
             {{ npcName }} is irritable. Speech should be sharper and shorter than usual.
         {% elif hunger_level == 2 %}
-            [STATUS: STARVING (Rank: {{ hungerRank }})]
             {{ npcName }} is LOSING CONTROL.
             **INSTRUCTION:** Trembling, paranoid, and aggressive. Speech must be fragmented and desperate. The hunger overrides all other goals.
         {% elif hunger_level == 3 %}
-            [STATUS: FERAL (Rank: {{ hungerRank }})]
-            **CRITICAL OVERRIDE:** {{ npcName }} is NO LONGER CAPABLE of normal thought or speech.
+w            **CRITICAL OVERRIDE:** {{ npcName }} is NO LONGER CAPABLE of normal thought or speech.
 
             **MANDATORY BEHAVIOR:**
             1. **ONLY** communicate through:

@@ -57,7 +57,7 @@ endEvent
 Event OnAnimationEventUnregistered(ObjectReference akSource, string asEventName)
 	SHSM.debugConsole("Animation event '" + asEventName + "' unregistered for " + selfRef.GetDisplayName())
     if keepAnimRegister && SHSM.IsActorLoaded(selfRef)
-        SHSM.debugConsole("Re-registering animation events for " + selfRef.GetDisplayName())
+        SHSM.debugConsole("Re-registering  events for " + selfRef.GetDisplayName())
         registerForBloodDecalAnim()
     endif
 endEvent
