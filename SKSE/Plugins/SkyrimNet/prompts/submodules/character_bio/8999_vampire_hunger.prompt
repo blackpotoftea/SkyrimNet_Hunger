@@ -42,7 +42,7 @@
             {{ npcName }} is LOSING CONTROL.
             **INSTRUCTION:** Trembling, paranoid, and aggressive. Speech must be fragmented and desperate. The hunger overrides all other goals.
         {% elif hunger_level == 3 %}
-w            **CRITICAL OVERRIDE:** {{ npcName }} is NO LONGER CAPABLE of normal thought or speech.
+            **CRITICAL OVERRIDE:** {{ npcName }} is NO LONGER CAPABLE of normal thought or speech.
 
             **MANDATORY BEHAVIOR:**
             1. **ONLY** communicate through:
