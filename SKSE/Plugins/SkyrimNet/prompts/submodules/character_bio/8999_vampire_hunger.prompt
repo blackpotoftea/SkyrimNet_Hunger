@@ -1,7 +1,7 @@
 {% set is_first_person = (render_mode == "full" or render_mode == "thoughts") %} {# version 1.1 #}
 {% set is_third_person = (render_mode == "dialogue_target") %}
 {% if is_first_person or is_third_person %}
-    {% if is_plugin_loaded("SkyrimNet_Hunger.esp") and (is_in_faction(actorUUID, "DLC1SeranaFaction") or actor_has_keyword(actorUUID, "ActorTypeVampire")) %}
+    {% if is_plugin_loaded("SkyrimNet_Hunger.esp") and (is_in_faction(actorUUID, "DLC1SeranaFaction") or actor_has_keyword(actorUUID, "Vampire")) %}
 
         {# --- VARIABLES --- #}
         {% set npc = decnpc(actorUUID) %}
