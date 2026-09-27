@@ -1,0 +1,16 @@
+{
+  "id": "potoftea.vampire-hunger",
+  "type": "bundle",
+  "title": "Vampire Hunger",
+  "tagline": "A vampire's blood hunger shapes how they think, speak and look.",
+  "description": "Character bio submodule for vampire NPCs and Serana, driven by the SkyrimNet Hunger mod.\n\nHunger is read from `SHS_BloodFaction` and mapped to four states:\n\n- **Satiated** - calm, normal speech\n- **Thirsty** - irritable, sharper and shorter speech\n- **Starving** - trembling, paranoid, fragmented and desperate\n- **Feral** - no rational speech, only fragments and snarls, driven to feed\n\nIt also describes how the vampire looks to whoever they are talking to.\n\nRequires `SkyrimNet_Hunger.esp`. Without it the submodule renders nothing.",
+  "author": "potoftea",
+  "tags": ["dialogue"],
+  "nsfw": false,
+  "icon": "package",
+  "version": "1.4.1",
+  "min_skyrimnet_version": "0.25.0",
+  "mods": [
+    { "name": "SkyrimNet Hunger", "file": "SkyrimNet_Hunger.esp", "required": true }
+  ]
+}

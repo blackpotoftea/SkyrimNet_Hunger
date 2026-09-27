@@ -113,6 +113,10 @@ endif
 
 This mod registers vampire hunger events with SkyrimNet, enabling AI characters to be aware of and respond to vampire hunger states in conversations and behaviors.
 
+The AI prompt ships as a SkyrimNet plugin, `potoftea.vampire-hunger`, in `SKSE/Plugins/SkyrimNet/external/`. It appears on SkyrimNet's Installed Plugins page with an External badge.
+
+**Upgrading from 1.3 or earlier:** SkyrimNet Beta 25 no longer reads the old prompt location (`SKSE/Plugins/SkyrimNet/prompts/`). If you copied `8999_vampire_hunger.prompt` with Plugins > Import Old Content, remove that imported copy from your overlay, or it will hide this mod's prompt updates.
+
 ## Requirements
 
 - SKSE64
@@ -120,7 +124,7 @@ This mod registers vampire hunger events with SkyrimNet, enabling AI characters 
 - [PapyrusUtil SE](https://www.nexusmods.com/skyrimspecialedition/mods/13048)
 - [MCM Helper](https://www.nexusmods.com/skyrimspecialedition/mods/53000)
 - [Vampire Animations](https://www.nexusmods.com/skyrimspecialedition/mods/100349)
-- SkyrimNet (for AI integration features)
+- SkyrimNet Beta 25 (0.25.0) or newer, for the AI prompt. Older betas won't load it.
 - Dawnguard DLC
 
 ## Installation
