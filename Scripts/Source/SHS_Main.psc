@@ -147,10 +147,10 @@ Function registerEventSchemaHunger(bool isEphemeral = true)
         "]"
 
     String formatTemplatesJson = "{" + \
-        "\"recent_events\":\"**{{npc_name}}** becomes {{state_name}}{{#if previous_state}} (was {{previous_state}}){{/if}} ({{time_desc}})\"," + \
+        "\"recent_events\":\"**{{npc_name}}** becomes {{state_name}}{% if previous_state %} (was {{previous_state}}){% endif %} ({{time_desc}})\"," + \
         "\"raw\":\"{{npc_name}} -> {{state_name}}\"," + \
         "\"compact\":\"{{npc_name}}: {{state_name}} ({{hunger_level}})\"," + \
-        "\"verbose\":\"Vampire Hunger: {{npc_name}} transitioned to {{state_name}} - Level: {{hunger_level}}/100, State ID: {{hunger_state}}{{#if previous_state}}, Previous: {{previous_state}}{{/if}}\"" + \
+        "\"verbose\":\"Vampire Hunger: {{npc_name}} transitioned to {{state_name}} - Level: {{hunger_level}}/100, State ID: {{hunger_state}}{% if previous_state %}, Previous: {{previous_state}}{% endif %}\"" + \
         "}"
     
 
