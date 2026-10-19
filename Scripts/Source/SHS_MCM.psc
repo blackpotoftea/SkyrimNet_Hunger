@@ -81,6 +81,9 @@ Function LoadSettings()
     MainQuest.SetEventTTL(GetModSettingInt("iEventTTL:Main"))
     MainQuest.debugConsole("EventTTL: " + MainQuest.GetEventTTL())
 
+    MainQuest.SetStoreHungerEvents(GetModSettingBool("bStoreHungerEvents:Main"))
+    MainQuest.debugConsole("StoreHungerEvents: " + MainQuest.GetStoreHungerEvents())
+
     MainQuest.SetDebugForceHungerState(GetModSettingInt("iDebugForceHungerState:Main"))
     MainQuest.debugConsole("DebugForceHungerState: " + MainQuest.GetDebugForceHungerState())
 

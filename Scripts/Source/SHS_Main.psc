@@ -32,6 +32,9 @@ int _AmountToReduceFull = 80
 int _AmountToReducePartial = 40
 int _EventTTL = 120
 int _DebugForceHungerState = -1
+; Keep hunger changes and feedings in SkyrimNet's history (stored events), so every SkyrimNet reader sees them and
+; the NPCs remember them; off, a hunger change is a short-lived event for _EventTTL seconds, as before
+bool _StoreHungerEvents = true
 
 ; Getters
 float Function GetBaseRate()
@@ -76,6 +79,10 @@ EndFunction
 
 int Function GetDebugForceHungerState()
     return _DebugForceHungerState
+EndFunction
+
+bool Function GetStoreHungerEvents()
+    return _StoreHungerEvents
 EndFunction
 
 ; Setters (called by MCM)
@@ -123,13 +130,22 @@ Function SetDebugForceHungerState(int value)
     _DebugForceHungerState = value
 EndFunction
 
+Function SetStoreHungerEvents(bool value)
+    if value != _StoreHungerEvents
+        _StoreHungerEvents = value
+        ; the schema says whether vampire_hunger is stored or short-lived
+        registerEventSchemaHunger(!value)
+    endif
+EndFunction
+
 int Function GetCurrentModVersion()
     return 2  ; Hardcoded mod version
 EndFunction
 
 Function startup()
     Console("SkyrimNet_Hunger loaded...")
-    registerEventSchemaHunger()
+    registerEventSchemaHunger(!GetStoreHungerEvents())
+    registerEventSchemaHungerFed()
     RegisterForModEvent("NpcVampireFeed", "OnNpcVampireFeed")
     debugConsole("Registered for NpcVampireFeed mod event")
 EndFunction
@@ -160,6 +176,31 @@ Function registerEventSchemaHunger(bool isEphemeral = true)
                                 fieldsJson, formatTemplatesJson, isEphemeral, 120000, true, false)
     
     debugConsole("End Registered vampire_hunger event schema with SkyrimNet")
+EndFunction
+
+; Register the vampire_hunger_fed event schema with SkyrimNet: a feeding, always a stored event
+Function registerEventSchemaHungerFed()
+    String fieldsJson = "[" + \
+        "{\"name\":\"npc_name\",\"type\":0,\"required\":true,\"description\":\"Display name of the vampire\"}," + \
+        "{\"name\":\"in_combat\",\"type\":2,\"required\":true,\"description\":\"Whether the vampire fed during a fight\"}," + \
+        "{\"name\":\"source\",\"type\":0,\"required\":true,\"description\":\"own (this mod saw the feeding) or NpcVampireFeed (another mod reported it)\"}," + \
+        "{\"name\":\"hunger_before\",\"type\":1,\"required\":true,\"description\":\"Hunger level before feeding (0-100)\"}," + \
+        "{\"name\":\"hunger_after\",\"type\":1,\"required\":true,\"description\":\"Hunger level after feeding (0-100)\"}," + \
+        "{\"name\":\"state_name\",\"type\":0,\"required\":true,\"description\":\"Hunger state after feeding\"}" + \
+        "]"
+
+    String formatTemplatesJson = "{" + \
+        "\"recent_events\":\"**{{npc_name}}** fed{% if in_combat %} during a fight{% endif %} and is now {{state_name}} ({{time_desc}})\"," + \
+        "\"raw\":\"{{npc_name}} fed\"," + \
+        "\"compact\":\"{{npc_name}} fed: {{state_name}} ({{hunger_after}})\"," + \
+        "\"verbose\":\"Vampire Feeding: {{npc_name}} fed{% if in_combat %} during a fight{% endif %} - Level: {{hunger_before}} -> {{hunger_after}}/100, now {{state_name}}\"" + \
+        "}"
+
+    SkyrimNetApi.RegisterEventSchema("vampire_hunger_fed", "Vampire Fed", \
+                                "A vampire fed, lowering its hunger", \
+                                fieldsJson, formatTemplatesJson, false, 120000, true, false)
+
+    debugConsole("Registered vampire_hunger_fed event schema with SkyrimNet")
 EndFunction
 
 
@@ -282,7 +323,7 @@ Function ProcessActorUpdate(Actor akTarget)
 
 EndFunction
 
-Function FeedActor(Actor akTarget, Actor akVictim = None)
+Function FeedActor(Actor akTarget, Actor akVictim = None, bool reported = false)
     if !akTarget
         Return
     endif
@@ -352,7 +393,9 @@ Function FeedActor(Actor akTarget, Actor akVictim = None)
     ; --- Apply the reduction ---
     int NewHunger = CurrentHunger - TotalReduction
     debugConsole(akTarget.GetDisplayName() + " fed: " + CurrentHunger + " -> " + NewHunger + " (-" + TotalReduction + " hunger)")
+    bool inCombat = akTarget.IsInCombat()
     SetActorHunger(akTarget, NewHunger)
+    generateSkyrimNetFedEvent(akTarget, CurrentHunger, akTarget.GetFactionRank(SHS_BloodFaction), inCombat, reported)
 
 EndFunction
 
@@ -458,7 +501,11 @@ Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHung
     string npcName = npc.GetDisplayName()
     int hungerState = GetHungerState(newHungerLevel)
     string stateName = GetHungerStateName(newHungerLevel)
-    string previousStateName = GetHungerStateName(oldHungerLevel)
+    ; a level below 0 means the vampire wasn't tracked before (its first event)
+    string previousStateName = "Unknown"
+    if oldHungerLevel >= 0
+        previousStateName = GetHungerStateName(oldHungerLevel)
+    endif
 
     ; Create unique event ID using FormID and current time
     String eventId = "vampirehunger_" + npc.GetFormID() + "_" + (Utility.GetCurrentRealTime() as Int)
@@ -485,14 +532,53 @@ Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHung
         return
     EndIf
 
-    ; Register short-lived event with SkyrimNet
-    int result = SkyrimNetApi.RegisterShortLivedEvent(eventId, "vampire_hunger", eventDescription, eventDataJson, ttlMs, npc, npc)
-    debugConsole("SkyrimNet event registered (TTL: " + GetEventTTL() + "s): " + result)
+    if GetStoreHungerEvents()
+        ; a stored event: in the vampire's history, for every SkyrimNet reader and for its memories
+        SkyrimNetApi.RegisterEvent("vampire_hunger", eventDataJson, npc, npc)
+        debugConsole("SkyrimNet event stored: " + eventDescription)
+    else
+        ; Register short-lived event with SkyrimNet
+        int result = SkyrimNetApi.RegisterShortLivedEvent(eventId, "vampire_hunger", eventDescription, eventDataJson, ttlMs, npc, npc)
+        debugConsole("SkyrimNet event registered (TTL: " + GetEventTTL() + "s): " + result)
+    endif
 EndFunction
 
-Function CheckHungerStateChange(Actor npc, int oldHunger, int newHunger)
-    if !npc
+; A feeding, as a stored vampire_hunger_fed event, while hunger changes are kept in SkyrimNet's history
+Function generateSkyrimNetFedEvent(Actor npc, int hungerBefore, int hungerAfter, bool inCombat, bool reported)
+    if !npc || !GetStoreHungerEvents()
         return
+    endif
+
+    string source = "own"
+    if reported
+        source = "NpcVampireFeed"
+    endif
+    string inCombatJson = "false"
+    if inCombat
+        inCombatJson = "true"
+    endif
+
+    String eventDataJson = "{"
+    eventDataJson += "\"npc_name\":\"" + npc.GetDisplayName() + "\","
+    eventDataJson += "\"in_combat\":" + inCombatJson + ","
+    eventDataJson += "\"source\":\"" + source + "\","
+    eventDataJson += "\"hunger_before\":" + hungerBefore + ","
+    eventDataJson += "\"hunger_after\":" + hungerAfter + ","
+    eventDataJson += "\"state_name\":\"" + GetHungerStateName(hungerAfter) + "\""
+    eventDataJson += "}"
+
+    if !SkyrimNetApi.ValidateEventData("vampire_hunger_fed", eventDataJson)
+        console("ERROR: Validation failed for feeding event data!")
+        return
+    EndIf
+
+    SkyrimNetApi.RegisterEvent("vampire_hunger_fed", eventDataJson, npc, npc)
+    debugConsole("SkyrimNet feeding event stored for " + npc.GetDisplayName())
+EndFunction
+
+bool Function CheckHungerStateChange(Actor npc, int oldHunger, int newHunger)
+    if !npc
+        return false
     endif
 
     int oldState = GetHungerState(oldHunger)
@@ -501,7 +587,9 @@ Function CheckHungerStateChange(Actor npc, int oldHunger, int newHunger)
     if oldState != newState
         generateSkyrimNetHungerEvent(npc, oldHunger, newHunger)
         SendVampireHungerModEvent(npc, newHunger, newState)
+        return true
     endif
+    return false
 EndFunction
 
 Function SendVampireHungerModEvent(Actor npc, int hungerLevel, int hungerState)
@@ -536,7 +624,7 @@ Event OnNpcVampireFeed(string eventName, string strArg, float numArg, Form sende
 
     ; Use the existing FeedActor function with no victim (None)
     ; This will treat it as a non-combat feeding with partial reduction
-    FeedActor(vampire, None)
+    FeedActor(vampire, None, true)
 EndEvent
 
 
@@ -546,8 +634,10 @@ Function SetActorHunger(Actor npc, int newHungerLevel)
     endif
 
     ; Ensure actor is in faction
+    bool firstTracked = false
     if !npc.IsInFaction(SHS_BloodFaction)
         npc.AddToFaction(SHS_BloodFaction)
+        firstTracked = true
         debugConsole("SetActorHunger: Added " + npc.GetDisplayName() + " to SHS_BloodFaction")
     endif
 
@@ -575,14 +665,21 @@ Function SetActorHunger(Actor npc, int newHungerLevel)
     endif
 
     ; Only update if changed
+    bool stateEventSent = false
     if newHungerLevel != currentHunger
         ; Check for state changes and trigger events
-        CheckHungerStateChange(npc, currentHunger, newHungerLevel)
+        stateEventSent = CheckHungerStateChange(npc, currentHunger, newHungerLevel)
 
         ; Apply the new hunger level
         npc.SetFactionRank(SHS_BloodFaction, newHungerLevel)
 
         debugConsole(npc.GetDisplayName() + " hunger updated: " + currentHunger + " -> " + newHungerLevel + " (" + GetHungerStateName(newHungerLevel) + ")")
+    endif
+
+    ; A vampire tracked for the first time gets its starting state stored too, so the newest stored vampire_hunger
+    ; event always gives a tracked vampire's current state
+    if firstTracked && !stateEventSent && GetStoreHungerEvents()
+        generateSkyrimNetHungerEvent(npc, -1, newHungerLevel)
     endif
 
     StorageUtil.SetFloatValue(npc, "SHS_LastSeen", Utility.GetCurrentGameTime())

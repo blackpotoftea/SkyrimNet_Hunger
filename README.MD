@@ -76,6 +76,25 @@ EndEvent
 
 The event only fires when the hunger **state** changes (crossing thresholds), not on every hunger value change. This prevents spam and ensures you only receive meaningful state transitions.
 
+### Reading a Vampire's Hunger
+
+A vampire's current hunger is its rank in the blood faction, which other mods can read at any time (for example right after a save loads, when no event has fired yet):
+
+- **Faction:** `SHS_BloodFaction`, form `0x002F9B` in `SkyrimNet_Hunger.esp`
+- **Rank:** the hunger level, 0-100. A vampire not in the faction isn't tracked yet.
+- **States:** 0-25 Satiated, 26-75 Thirsty, 76-90 Starving, 91-100 Feral
+
+The faction, its form ID and the meaning of its rank are kept stable for other mods.
+
+### SkyrimNet Events
+
+While **Keep in SkyrimNet's History** is on (the default), the mod stores two events in SkyrimNet's history. Every SkyrimNet mod can read them (for example with `PublicGetRecentEvents` from C++), and SkyrimNet turns them into the NPCs' memories like any stored event. The vampire is both originator and target.
+
+- **`vampire_hunger`**: a hunger state change, with `npc_name`, `hunger_level` (0-100), `hunger_state` (0=Satiated, 1=Thirsty, 2=Starving, 3=Feral), `state_name` and `previous_state`. A vampire tracked for the first time gets one too, with `previous_state` "Unknown", so a tracked vampire's newest `vampire_hunger` event always gives its current state.
+- **`vampire_hunger_fed`**: a feeding, with `npc_name`, `in_combat` (true or false), `source` ("own" when this mod saw the feeding, "NpcVampireFeed" when another mod reported it), `hunger_before`, `hunger_after` and `state_name` (after feeding).
+
+With the option off, `vampire_hunger` is a short-lived event for the **Event Duration** set in the MCM, as before, and no feeding event is stored.
+
 ---
 
 ### Incoming Event: `NpcVampireFeed`
@@ -111,7 +130,7 @@ endif
 
 ## SkyrimNet Integration
 
-This mod registers vampire hunger events with SkyrimNet, enabling AI characters to be aware of and respond to vampire hunger states in conversations and behaviors.
+This mod registers vampire hunger events with SkyrimNet, enabling AI characters to be aware of and respond to vampire hunger states in conversations and behaviors. By default, hunger changes and feedings are kept in SkyrimNet's history, so the NPCs remember them (see [SkyrimNet Events](#skyrimnet-events)).
 
 The AI prompt ships as a SkyrimNet plugin, `potoftea.vampire-hunger`, in `SKSE/Plugins/SkyrimNet/external/`. It appears on SkyrimNet's Installed Plugins page with an External badge.
 
@@ -137,7 +156,8 @@ Configure settings through the MCM menu:
 - Enable/disable development mode for debug logging
 - Adjust hunger rates
 - Configure feeding mechanics
-- Set event TTL for SkyrimNet integration
+- Keep hunger changes and feedings in SkyrimNet's history, or show hunger changes only briefly
+- Set event TTL for SkyrimNet integration (when not kept in the history)
 
 ## Credits
 
