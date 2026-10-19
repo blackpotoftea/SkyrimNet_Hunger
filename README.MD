@@ -88,12 +88,14 @@ The faction, its form ID and the meaning of its rank are kept stable for other m
 
 ### SkyrimNet Events
 
-While **Keep in SkyrimNet's History** is on (the default), the mod stores two events in SkyrimNet's history. Every SkyrimNet mod can read them (for example with `PublicGetRecentEvents` from C++), and SkyrimNet turns them into the NPCs' memories like any stored event. The vampire is both originator and target.
+Every hunger state change is a short-lived `vampire_hunger` event, shown for the **Event Duration** set in the MCM, as before.
 
-- **`vampire_hunger`**: a hunger state change, with `npc_name`, `hunger_level` (0-100), `hunger_state` (0=Satiated, 1=Thirsty, 2=Starving, 3=Feral), `state_name` and `previous_state`. A vampire tracked for the first time gets one too, with `previous_state` "Unknown", so a tracked vampire's newest `vampire_hunger` event always gives its current state.
+While **Keep in SkyrimNet's History** is on (the default), the mod also stores two events in SkyrimNet's history. Every SkyrimNet mod can read them (for example with `PublicGetRecentEvents` from C++), and SkyrimNet turns them into the NPCs' memories like any stored event. The vampire is both originator and target.
+
+- **`vampire_hunger_state`**: a hunger state change, with the same fields as `vampire_hunger`: `npc_name`, `hunger_level` (0-100), `hunger_state` (0=Satiated, 1=Thirsty, 2=Starving, 3=Feral), `state_name` and `previous_state`. A vampire tracked for the first time gets one too, with `previous_state` "Unknown", so a tracked vampire's newest `vampire_hunger_state` event always gives its current state.
 - **`vampire_hunger_fed`**: a feeding, with `npc_name`, `in_combat` (true or false), `source` ("own" when this mod saw the feeding, "NpcVampireFeed" when another mod reported it), `hunger_before`, `hunger_after` and `state_name` (after feeding).
 
-With the option off, `vampire_hunger` is a short-lived event for the **Event Duration** set in the MCM, as before, and no feeding event is stored.
+The stored change has a type of its own because SkyrimNet keeps the first schema registered for an event type: `vampire_hunger` has been short-lived since its first release, so it is never switched to a stored event. Both stored types are registered once at start-up; the option only decides whether they are sent.
 
 ---
 
@@ -156,8 +158,8 @@ Configure settings through the MCM menu:
 - Enable/disable development mode for debug logging
 - Adjust hunger rates
 - Configure feeding mechanics
-- Keep hunger changes and feedings in SkyrimNet's history, or show hunger changes only briefly
-- Set event TTL for SkyrimNet integration (when not kept in the history)
+- Also keep hunger changes and feedings in SkyrimNet's history
+- Set event TTL for SkyrimNet integration
 
 ## Credits
 

@@ -32,8 +32,9 @@ int _AmountToReduceFull = 80
 int _AmountToReducePartial = 40
 int _EventTTL = 120
 int _DebugForceHungerState = -1
-; Keep hunger changes and feedings in SkyrimNet's history (stored events), so every SkyrimNet reader sees them and
-; the NPCs remember them; off, a hunger change is a short-lived event for _EventTTL seconds, as before
+; Also keep hunger changes and feedings in SkyrimNet's history, as the stored events vampire_hunger_state and
+; vampire_hunger_fed, so every SkyrimNet reader sees them and the NPCs remember them. The short-lived vampire_hunger
+; event is sent as before either way.
 bool _StoreHungerEvents = true
 
 ; Getters
@@ -131,11 +132,9 @@ Function SetDebugForceHungerState(int value)
 EndFunction
 
 Function SetStoreHungerEvents(bool value)
-    if value != _StoreHungerEvents
-        _StoreHungerEvents = value
-        ; the schema says whether vampire_hunger is stored or short-lived
-        registerEventSchemaHunger(!value)
-    endif
+    ; only whether the stored events are sent: SkyrimNet keeps the first schema registered for an event type, so
+    ; no type is ever switched between short-lived and stored
+    _StoreHungerEvents = value
 EndFunction
 
 int Function GetCurrentModVersion()
@@ -144,7 +143,8 @@ EndFunction
 
 Function startup()
     Console("SkyrimNet_Hunger loaded...")
-    registerEventSchemaHunger(!GetStoreHungerEvents())
+    registerEventSchemaHunger()
+    registerEventSchemaHungerStored()
     registerEventSchemaHungerFed()
     RegisterForModEvent("NpcVampireFeed", "OnNpcVampireFeed")
     debugConsole("Registered for NpcVampireFeed mod event")
@@ -154,6 +154,26 @@ EndFunction
 Function registerEventSchemaHunger(bool isEphemeral = true)
 
     debugConsole("Start Registered vampire_hunger event schema with SkyrimNet")
+    SkyrimNetApi.RegisterEventSchema("vampire_hunger", "Vampire Hunger State Change", \
+                                "A vampire's hunger state has changed (Satiated/Thirsty/Starving/Feral)", \
+                                HungerFieldsJson(), HungerTemplatesJson(), isEphemeral, 120000, true, false)
+    
+    debugConsole("End Registered vampire_hunger event schema with SkyrimNet")
+EndFunction
+
+; Register the vampire_hunger_state event schema with SkyrimNet: the same fields and templates as vampire_hunger,
+; always a stored event. It is its own type because SkyrimNet keeps the first schema registered for a type, so
+; vampire_hunger, short-lived since its first release, can never become a stored one.
+Function registerEventSchemaHungerStored()
+    SkyrimNetApi.RegisterEventSchema("vampire_hunger_state", "Vampire Hunger State", \
+                                "A vampire's hunger state, kept in its history: each change, and its state when first tracked", \
+                                HungerFieldsJson(), HungerTemplatesJson(), false, 120000, true, false)
+
+    debugConsole("Registered vampire_hunger_state event schema with SkyrimNet")
+EndFunction
+
+; The hunger events' fields, shared by vampire_hunger and vampire_hunger_state
+String Function HungerFieldsJson()
         String fieldsJson = "[" + \
         "{\"name\":\"npc_name\",\"type\":0,\"required\":true,\"description\":\"Display name of the vampire\"}," + \
         "{\"name\":\"hunger_level\",\"type\":1,\"required\":true,\"description\":\"Current hunger level (0-100)\"}," + \
@@ -161,21 +181,18 @@ Function registerEventSchemaHunger(bool isEphemeral = true)
         "{\"name\":\"state_name\",\"type\":0,\"required\":true,\"description\":\"Human-readable state name\"}," + \
         "{\"name\":\"previous_state\",\"type\":0,\"required\":false,\"description\":\"Previous hunger state name\",\"defaultValue\":\"Unknown\"}" + \
         "]"
+    return fieldsJson
+EndFunction
 
+; The hunger events' format templates, shared by vampire_hunger and vampire_hunger_state
+String Function HungerTemplatesJson()
     String formatTemplatesJson = "{" + \
         "\"recent_events\":\"**{{npc_name}}** becomes {{state_name}}{% if previous_state %} (was {{previous_state}}){% endif %} ({{time_desc}})\"," + \
         "\"raw\":\"{{npc_name}} -> {{state_name}}\"," + \
         "\"compact\":\"{{npc_name}}: {{state_name}} ({{hunger_level}})\"," + \
         "\"verbose\":\"Vampire Hunger: {{npc_name}} transitioned to {{state_name}} - Level: {{hunger_level}}/100, State ID: {{hunger_state}}{% if previous_state %}, Previous: {{previous_state}}{% endif %}\"" + \
         "}"
-    
-
-
-    SkyrimNetApi.RegisterEventSchema("vampire_hunger", "Vampire Hunger State Change", \
-                                "A vampire's hunger state has changed (Satiated/Thirsty/Starving/Feral)", \
-                                fieldsJson, formatTemplatesJson, isEphemeral, 120000, true, false)
-    
-    debugConsole("End Registered vampire_hunger event schema with SkyrimNet")
+    return formatTemplatesJson
 EndFunction
 
 ; Register the vampire_hunger_fed event schema with SkyrimNet: a feeding, always a stored event
@@ -493,7 +510,9 @@ string Function GetHungerStateName(int hungerRank)
     endif
 EndFunction
 
-Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHungerLevel)
+; shortLived: send the short-lived vampire_hunger event, as every change always has; a vampire's first tracking
+; (oldHungerLevel below 0) sends only the stored one
+Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHungerLevel, bool shortLived = true)
     if !npc
         return
     endif
@@ -532,14 +551,20 @@ Function generateSkyrimNetHungerEvent(Actor npc, int oldHungerLevel, int newHung
         return
     EndIf
 
-    if GetStoreHungerEvents()
-        ; a stored event: in the vampire's history, for every SkyrimNet reader and for its memories
-        SkyrimNetApi.RegisterEvent("vampire_hunger", eventDataJson, npc, npc)
-        debugConsole("SkyrimNet event stored: " + eventDescription)
-    else
+    if shortLived
         ; Register short-lived event with SkyrimNet
         int result = SkyrimNetApi.RegisterShortLivedEvent(eventId, "vampire_hunger", eventDescription, eventDataJson, ttlMs, npc, npc)
         debugConsole("SkyrimNet event registered (TTL: " + GetEventTTL() + "s): " + result)
+    endif
+
+    if GetStoreHungerEvents()
+        ; the stored copy: in the vampire's history, for every SkyrimNet reader and for its memories
+        if !SkyrimNetApi.ValidateEventData("vampire_hunger_state", eventDataJson)
+            console("ERROR: Validation failed for stored hunger event data!")
+            return
+        EndIf
+        SkyrimNetApi.RegisterEvent("vampire_hunger_state", eventDataJson, npc, npc)
+        debugConsole("SkyrimNet event stored: " + eventDescription)
     endif
 EndFunction
 
@@ -676,10 +701,10 @@ Function SetActorHunger(Actor npc, int newHungerLevel)
         debugConsole(npc.GetDisplayName() + " hunger updated: " + currentHunger + " -> " + newHungerLevel + " (" + GetHungerStateName(newHungerLevel) + ")")
     endif
 
-    ; A vampire tracked for the first time gets its starting state stored too, so the newest stored vampire_hunger
+    ; A vampire tracked for the first time gets its starting state stored too, so the newest vampire_hunger_state
     ; event always gives a tracked vampire's current state
     if firstTracked && !stateEventSent && GetStoreHungerEvents()
-        generateSkyrimNetHungerEvent(npc, -1, newHungerLevel)
+        generateSkyrimNetHungerEvent(npc, -1, newHungerLevel, false)
     endif
 
     StorageUtil.SetFloatValue(npc, "SHS_LastSeen", Utility.GetCurrentGameTime())

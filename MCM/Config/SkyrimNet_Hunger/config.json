@@ -199,7 +199,7 @@
           "id": "iEventTTL:Main",
           "text": "Event Duration (TTL)",
           "type": "slider",
-          "help": "How long hunger state change events stay visible in SkyrimNet when they aren't kept in its history (in seconds)",
+          "help": "How long hunger state change events stay visible in SkyrimNet (in seconds)",
           "valueOptions": {
             "min": 30,
             "max": 600,
@@ -213,7 +213,7 @@
           "id": "bStoreHungerEvents:Main",
           "text": "Keep in SkyrimNet's History",
           "type": "toggle",
-          "help": "Keep hunger changes and feedings in SkyrimNet's history, so NPCs remember them and other SkyrimNet mods can read them. Off, a hunger change shows only for the Event Duration above.",
+          "help": "Also keep hunger changes and feedings in SkyrimNet's history, so NPCs remember them and other SkyrimNet mods can read them. The short-lived hunger event still shows for the Event Duration above either way.",
           "valueOptions": {
             "sourceType": "ModSettingBool",
             "defaultValue": true
