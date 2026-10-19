@@ -76,6 +76,16 @@ EndEvent
 
 The event only fires when the hunger **state** changes (crossing thresholds), not on every hunger value change. This prevents spam and ensures you only receive meaningful state transitions.
 
+### Reading a Vampire's Hunger
+
+A vampire's current hunger is its rank in the blood faction, which other mods can read at any time, for example right after a save loads:
+
+- **Faction:** `SHS_BloodFaction`, form `0x002F9B` in `SkyrimNet_Hunger.esp`
+- **Rank:** the hunger level, 0 to 100. A vampire not in the faction isn't tracked yet.
+- **States:** 0-25 Satiated, 26-75 Thirsty, 76-90 Starving, 91-100 Feral
+
+The faction, its form ID and the meaning of its rank are kept stable for other mods.
+
 ---
 
 ### Incoming Event: `NpcVampireFeed`
